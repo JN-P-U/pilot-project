@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import type { Status } from "@/app/types";
-import { useEvidenceScreen } from "@ui-test/react";
+import { useEvidenceScreen } from "@auto-ui-test/react";
 
 function AlertDialog({ message, onClose, zIndex = 10000 }: { message: string; onClose: () => void; zIndex?: number }) {
   return (

@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import styles from "./evidence.module.css";
 import EventLogModal from "./EventLogModal";
-import type { EventLogItem } from "./generate-event-excel";
+import type { EventLogItem, TestCaseMeta } from "./generate-event-excel";
 
 function waitFrames() {
   return new Promise<void>((res) => requestAnimationFrame(() => requestAnimationFrame(() => res())));
@@ -42,12 +42,17 @@ export default function EventRecorder() {
   const [level3, setLevel3] = useState("");
   const [level4, setLevel4] = useState("");
 
+  const [currentCaseNumber, setCurrentCaseNumber] = useState(1);
+  const [caseMetas, setCaseMetas] = useState<TestCaseMeta[]>([{ caseNumber: 1, caseName: "" }]);
+
   const recordingRef = useRef(false);
   const capturingRef = useRef(false);
   const seqRef = useRef(0);
   const lastKeyRecordedRef = useRef<EventTarget | null>(null);
+  const currentCaseNumberRef = useRef(1);
 
   useEffect(() => { recordingRef.current = recording; }, [recording]);
+  useEffect(() => { currentCaseNumberRef.current = currentCaseNumber; }, [currentCaseNumber]);
 
   async function captureScreen(): Promise<string> {
     const { toPng } = await import("html-to-image");
@@ -87,6 +92,7 @@ export default function EventRecorder() {
       targetLabel: label,
       url,
       screenshot,
+      caseNumber: currentCaseNumberRef.current,
     }]);
   }, []);
 
@@ -110,6 +116,7 @@ export default function EventRecorder() {
       targetLabel: getLabel(target),
       value: target.value?.slice(0, 100),
       url: window.location.pathname,
+      caseNumber: currentCaseNumberRef.current,
     }]);
   }, []);
 
@@ -131,6 +138,7 @@ export default function EventRecorder() {
       targetLabel: getLabel(target),
       value: target.value?.slice(0, 100),
       url: window.location.pathname,
+      caseNumber: currentCaseNumberRef.current,
     }]);
   }, []);
 
@@ -155,14 +163,29 @@ export default function EventRecorder() {
       {!modalOpen && (
         <div data-event-recorder className={styles.recorderWrap}>
           {recording ? (
-            <button
-              type="button"
-              onClick={() => setRecording(false)}
-              className={styles.recorderBtnActive}
-            >
-              <span className={styles.recorderDot} />
-              기록 중 ({events.length})
-            </button>
+            <>
+              <button
+                type="button"
+                onClick={() => {
+                  const next = currentCaseNumber + 1;
+                  setCurrentCaseNumber(next);
+                  currentCaseNumberRef.current = next;
+                  setCaseMetas((prev) => [...prev, { caseNumber: next, caseName: "" }]);
+                }}
+                className={styles.floatBtn}
+                style={{ background: "#0891b2", marginBottom: "0.5rem" }}
+              >
+                케이스 구분 ({currentCaseNumber})
+              </button>
+              <button
+                type="button"
+                onClick={() => setRecording(false)}
+                className={styles.recorderBtnActive}
+              >
+                <span className={styles.recorderDot} />
+                기록 중 ({events.length})
+              </button>
+            </>
           ) : (
             <>
               {hasEvents && (
@@ -201,15 +224,24 @@ export default function EventRecorder() {
           level3={level3}
           level4={level4}
           onDeleteEvent={(id) => setEvents((prev) => prev.filter((e) => e.id !== id))}
+          onUpdateEvent={(id, testResult) => setEvents((prev) => prev.map((e) => e.id === id ? { ...e, testResult: testResult || undefined } : e))}
+          onUpdateCaseMeta={(caseNumber, patch) => setCaseMetas((prev) => prev.map((m) => m.caseNumber === caseNumber ? { ...m, ...patch } : m))}
+          caseMetas={caseMetas}
           onClose={() => setModalOpen(false)}
           onClear={() => {
             setEvents([]);
             seqRef.current = 0;
+            setCurrentCaseNumber(1);
+            currentCaseNumberRef.current = 1;
+            setCaseMetas([{ caseNumber: 1, caseName: "" }]);
             setModalOpen(false);
           }}
           onDownloadComplete={() => {
             setEvents([]);
             seqRef.current = 0;
+            setCurrentCaseNumber(1);
+            currentCaseNumberRef.current = 1;
+            setCaseMetas([{ caseNumber: 1, caseName: "" }]);
             setModalOpen(false);
           }}
           onServiceCodeChange={setServiceCode}

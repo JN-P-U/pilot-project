@@ -28,6 +28,8 @@ export interface CaseItem {
   testItem: string;
   testContent: string;
   expectedResult: string;
+  actualResult: string;
+  testResult?: "pass" | "fail" | "na";
   programId: string;
   verifyMethod: string;
 }
@@ -155,7 +157,9 @@ function testCaseSheet(p: ExcelPayload) {
   ];
   p.cases.forEach((c, idx) => {
     const n = idx + 5;
-    rows.push(row(n, [tc(n,1,pad2(c.caseNumber),3), tc(n,2,c.testItem,1), tc(n,3,c.testContent,1), tc(n,4,"",1), tc(n,5,c.expectedResult,1), tc(n,6,c.programId,1), tc(n,7,c.verifyMethod,1), tc(n,8,"",1), tc(n,9,"",1), tc(n,10,"성공",6), tc(n,11,"Y",1), tc(n,12,"",1)], 20));
+    const resultLabel = c.testResult === "fail" ? "실패" : c.testResult === "na" ? "해당없음" : "성공";
+    const resultStyle = c.testResult === "fail" ? 3 : 6;
+    rows.push(row(n, [tc(n,1,pad2(c.caseNumber),3), tc(n,2,c.testItem,1), tc(n,3,c.testContent,1), tc(n,4,"",1), tc(n,5,c.expectedResult,1), tc(n,6,c.programId,1), tc(n,7,c.verifyMethod,1), tc(n,8,c.actualResult,1), tc(n,9,"",1), tc(n,10,resultLabel,resultStyle), tc(n,11,"Y",1), tc(n,12,"",1)], 20));
   });
   return sheet([12,20,35,20,25,22,22,15,10,14,12,18], rows, ["B2:D2","F2:J2","A3:I3","J3:L3"]);
 }

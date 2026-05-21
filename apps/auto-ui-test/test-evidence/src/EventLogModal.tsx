@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { generateEventExcel, makeEventFileName, type EventLogItem } from "./generate-event-excel";
+import { generateEventExcel, makeEventFileName, type EventLogItem, type TestCaseMeta } from "./generate-event-excel";
 import styles from "./evidence.module.css";
 
 function AlertDialog({ message, onClose, onConfirm, zIndex = 10000 }: {
@@ -32,7 +32,10 @@ interface Props {
   author: string;
   bizCategory: string;
   level1: string; level2: string; level3: string; level4: string;
+  caseMetas: TestCaseMeta[];
   onDeleteEvent: (id: string) => void;
+  onUpdateEvent: (id: string, testResult: "pass" | "fail" | "na" | "") => void;
+  onUpdateCaseMeta: (caseNumber: number, patch: Partial<Omit<TestCaseMeta, "caseNumber">>) => void;
   onClose: () => void;
   onClear: () => void;
   onDownloadComplete: () => void;
@@ -52,7 +55,7 @@ const EVENT_TYPE_LABEL: Record<string, string> = { click: "클릭", input: "입�
 export default function EventLogModal({
   events, serviceCode, screenId, screenName, author,
   bizCategory, level1, level2, level3, level4,
-  onDeleteEvent, onClose, onClear, onDownloadComplete,
+  caseMetas, onDeleteEvent, onUpdateEvent, onUpdateCaseMeta, onClose, onClear, onDownloadComplete,
   onServiceCodeChange, onScreenIdChange, onScreenNameChange, onAuthorChange,
   onBizCategoryChange, onLevel1Change, onLevel2Change, onLevel3Change, onLevel4Change,
 }: Props) {
@@ -139,29 +142,73 @@ export default function EventLogModal({
               {events.length === 0 ? (
                 <div className={styles.emptyCase}>기록된 이벤트가 없습니다</div>
               ) : (
-                <div className={styles.eventList}>
-                  {events.map((e, idx) => (
-                    <div key={e.id} className={styles.eventRow}>
-                      <span className={styles.eventSeq}>{idx + 1}</span>
-                      <span className={styles.eventTime}>{e.timestamp}</span>
-                      <span className={`${styles.eventTypeBadge} ${styles[`eventType_${e.eventType}`]}`}>
-                        {EVENT_TYPE_LABEL[e.eventType] ?? e.eventType}
-                      </span>
-                      <span className={styles.eventDesc}>
-                        <span className={styles.eventTarget}>&lt;{e.targetTag}&gt;</span>{" "}
-                        {e.eventType === "click" && `[${e.targetLabel}] 클릭`}
-                        {e.eventType === "input" && `[${e.targetLabel}]${e.value ? ` → "${e.value}"` : " 입력"}`}
-                        {e.eventType === "navigate" && `${e.url} 이동`}
-                      </span>
-                      {e.screenshot && (
-                        <button type="button" className={styles.eventThumbBtn} onClick={() => setPreviewImg(e.screenshot!)}>
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img src={e.screenshot} alt={`이벤트 ${e.seq} 캡처`} className={styles.eventThumb} />
-                        </button>
-                      )}
-                      <button type="button" onClick={() => onDeleteEvent(e.id)} className={styles.deleteBtn} title="삭제">✕</button>
-                    </div>
-                  ))}
+                <div className={styles.caseGroupList}>
+                  {caseMetas.map((meta) => {
+                    const caseEvents = events.filter((e) => (e.caseNumber ?? 1) === meta.caseNumber);
+                    return (
+                      <div key={meta.caseNumber} className={styles.caseGroup}>
+                        <div className={styles.caseGroupHeader}>
+                          <span className={styles.caseGroupLabel}>케이스 {meta.caseNumber}</span>
+                          <input
+                            type="text"
+                            value={meta.caseName}
+                            onChange={(ev) => onUpdateCaseMeta(meta.caseNumber, { caseName: ev.target.value })}
+                            placeholder="케이스명 (선택)"
+                            className={styles.caseGroupNameInput}
+                          />
+                          <select
+                            value={meta.testResult ?? ""}
+                            onChange={(ev) => onUpdateCaseMeta(meta.caseNumber, { testResult: (ev.target.value as "pass" | "fail" | "na") || undefined })}
+                            className={`${styles.resultSelect} ${meta.testResult ? styles[`result_${meta.testResult}`] : ""}`}
+                          >
+                            <option value="">수행결과</option>
+                            <option value="pass">통과</option>
+                            <option value="fail">실패</option>
+                            <option value="na">해당없음</option>
+                          </select>
+                          <span className={styles.caseCount}>{caseEvents.length}건</span>
+                        </div>
+                        {caseEvents.length === 0 ? (
+                          <div className={styles.emptyCaseGroup}>이벤트 없음</div>
+                        ) : (
+                          <div className={styles.eventList}>
+                            {caseEvents.map((e, idx) => (
+                              <div key={e.id} className={styles.eventRow}>
+                                <span className={styles.eventSeq}>{idx + 1}</span>
+                                <span className={styles.eventTime}>{e.timestamp}</span>
+                                <span className={`${styles.eventTypeBadge} ${styles[`eventType_${e.eventType}`]}`}>
+                                  {EVENT_TYPE_LABEL[e.eventType] ?? e.eventType}
+                                </span>
+                                <span className={styles.eventDesc}>
+                                  <span className={styles.eventTarget}>&lt;{e.targetTag}&gt;</span>{" "}
+                                  {e.eventType === "click" && `[${e.targetLabel}] 클릭`}
+                                  {e.eventType === "input" && `[${e.targetLabel}]${e.value ? ` → "${e.value}"` : " 입력"}`}
+                                  {e.eventType === "navigate" && `${e.url} 이동`}
+                                </span>
+                                {e.screenshot && (
+                                  <button type="button" className={styles.eventThumbBtn} onClick={() => setPreviewImg(e.screenshot!)}>
+                                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                                    <img src={e.screenshot} alt={`이벤트 ${e.seq} 캡처`} className={styles.eventThumb} />
+                                  </button>
+                                )}
+                                <select
+                                  value={e.testResult ?? ""}
+                                  onChange={(ev) => onUpdateEvent(e.id, ev.target.value as "pass" | "fail" | "na" | "")}
+                                  className={`${styles.resultSelect} ${e.testResult ? styles[`result_${e.testResult}`] : ""}`}
+                                >
+                                  <option value="">결과</option>
+                                  <option value="pass">통과</option>
+                                  <option value="fail">실패</option>
+                                  <option value="na">해당없음</option>
+                                </select>
+                                <button type="button" onClick={() => onDeleteEvent(e.id)} className={styles.deleteBtn} title="삭제">✕</button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </section>
