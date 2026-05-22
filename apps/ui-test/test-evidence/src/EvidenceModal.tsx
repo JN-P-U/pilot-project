@@ -151,12 +151,25 @@ export default function EvidenceModal({
                             <input type="text" value={value} onChange={(e) => onUpdateCase(c.id, { [key]: e.target.value })} className={styles.input} />
                           </div>
                         ))}
-                        {([["테스트내용", c.testContent, "testContent"], ["예상결과", c.expectedResult, "expectedResult"]] as [string, string, keyof Omit<CaseItem, "id"|"image"|"caseNumber">][]).map(([label, value, key]) => (
+                        {([["테스트내용", c.testContent, "testContent"], ["예상결과", c.expectedResult, "expectedResult"], ["실제결과", c.actualResult, "actualResult"]] as [string, string, keyof Omit<CaseItem, "id"|"image"|"caseNumber">][]).map(([label, value, key]) => (
                           <div key={key} className={styles.field}>
                             <label className={styles.label}>{label}</label>
                             <textarea value={value} onChange={(e) => onUpdateCase(c.id, { [key]: e.target.value })} rows={2} className={styles.textarea} />
                           </div>
                         ))}
+                        <div className={styles.field}>
+                          <label className={styles.label}>수행결과</label>
+                          <select
+                            value={c.testResult ?? ""}
+                            onChange={(e) => onUpdateCase(c.id, { testResult: (e.target.value as "pass"|"fail"|"na") || undefined })}
+                            className={`${styles.resultSelect} ${c.testResult ? styles[`result_${c.testResult}`] : ""}`}
+                          >
+                            <option value="">선택</option>
+                            <option value="pass">성공</option>
+                            <option value="fail">실패</option>
+                            <option value="na">해당없음</option>
+                          </select>
+                        </div>
                       </div>
                     </div>
                   ))}
