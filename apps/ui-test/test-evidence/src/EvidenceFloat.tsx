@@ -52,7 +52,7 @@ export default function EvidenceFloat() {
       const image = await captureScreen();
       setCases([{
         id: Date.now().toString(), caseNumber: 1, image,
-        testItem: "", testContent: "", expectedResult: "",
+        testItem: "", testContent: "", expectedResult: "", actualResult: "",
         programId: "", verifyMethod: "",
       }]);
       setModalOpen(true);
@@ -75,7 +75,7 @@ export default function EvidenceFloat() {
         const nextNum = Math.max(...prev.map((c) => c.caseNumber), 0) + 1;
         return [...prev, {
           id: Date.now().toString(), caseNumber: nextNum, image,
-          testItem: "", testContent: "", expectedResult: "",
+          testItem: "", testContent: "", expectedResult: "", actualResult: "",
           programId: "", verifyMethod: "",
         }];
       });

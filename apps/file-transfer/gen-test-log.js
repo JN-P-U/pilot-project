@@ -9,8 +9,8 @@ const fileName = 'migration_test.log';
 const targetSizeMB = 100;
 const targetSizeBytes = targetSizeMB * 1024 * 1024;
 
-// 현재 터미널이 위치한 폴더(process.cwd())에 파일 생성
-const filePath = path.join(process.cwd(), fileName);
+// 스크립트가 위치한 폴더(__dirname)에 파일 생성
+const filePath = path.join(__dirname, fileName);
 
 const extensions = ['.pdf', '.xls', '.xlsx', '.ppt', '.pptx', '.doc', '.docx', '.png', '.jpg'];
 const basePaths = [

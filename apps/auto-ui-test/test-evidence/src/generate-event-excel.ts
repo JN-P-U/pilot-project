@@ -21,6 +21,12 @@ const CHECKLIST_ITEMS: [string, string][] = [
   ["레이아웃", "오류 발생시 오류메시지가 올바르게 표시되는가?"],
 ];
 
+export interface TestCaseMeta {
+  caseNumber: number;
+  caseName: string;
+  testResult?: "pass" | "fail" | "na";
+}
+
 export interface EventLogItem {
   id: string;
   seq: number;
@@ -31,6 +37,8 @@ export interface EventLogItem {
   value?: string;
   url: string;
   screenshot?: string; // data URL (click 이벤트만)
+  testResult?: "pass" | "fail" | "na";
+  caseNumber?: number;
 }
 
 export interface EventExcelPayload {
@@ -45,6 +53,7 @@ export interface EventExcelPayload {
   level3?: string;
   level4?: string;
   events: EventLogItem[];
+  caseMetas?: TestCaseMeta[];
 }
 
 // ── ZIP ──────────────────────────────────────────────────────
@@ -159,28 +168,33 @@ function revisionSheet(p: EventExcelPayload) {
   ], []);
 }
 
+const TEST_RESULT_LABEL: Record<string, string> = { pass: "통과", fail: "실패", na: "해당없음" };
+
 function eventLogSheet(p: EventExcelPayload) {
-  const headers = ["순번", "시간", "유형", "대상 요소", "설명 / 입력값", "URL", "캡처"];
-  const colWidths = [7, 14, 10, 28, 42, 30, 8];
+  const headers = ["케이스", "순번", "시간", "유형", "대상 요소", "설명 / 입력값", "URL", "캡처", "결과"];
+  const colWidths = [8, 7, 14, 10, 28, 42, 30, 8, 10];
   const rows = [
     row(1, [tc(1, 1, "업무분류", 2), tc(1, 2, p.bizCategory ?? "", 1), tc(1, 3, "Level1", 2), tc(1, 4, p.level1 ?? "", 1), tc(1, 5, "작성자", 2), tc(1, 6, p.author, 1)], 22),
     row(2, [tc(2, 1, "Level2", 2), tc(2, 2, p.level2 ?? "", 1), tc(2, 3, "Level3", 2), tc(2, 4, p.level3 ?? "", 1), tc(2, 5, "Level4", 2), tc(2, 6, p.level4 ?? "", 1)], 22),
     row(3, [tc(3, 1, "이벤트 로그", 4)], 28),
     row(4, headers.map((h, i) => tc(4, i + 1, h, 2)), 22),
   ];
-  const ms = ["A3:G3"];
+  const ms = ["A3:I3"];
 
   p.events.forEach((e, idx) => {
     const n = idx + 5;
     const target = `<${e.targetTag}> ${e.targetLabel}`.slice(0, 50);
+    const caseLabel = e.caseNumber !== undefined ? String(e.caseNumber) : "";
     rows.push(row(n, [
-      nc(n, 1, e.seq, 3),
-      tc(n, 2, e.timestamp, 3),
-      tc(n, 3, EVENT_TYPE_LABEL[e.eventType] ?? e.eventType, 3),
-      tc(n, 4, target, 1),
-      tc(n, 5, eventDesc(e), 1),
-      tc(n, 6, e.url, 1),
-      tc(n, 7, e.screenshot ? "Y" : "-", 3),
+      tc(n, 1, caseLabel, 3),
+      nc(n, 2, e.seq, 3),
+      tc(n, 3, e.timestamp, 3),
+      tc(n, 4, EVENT_TYPE_LABEL[e.eventType] ?? e.eventType, 3),
+      tc(n, 5, target, 1),
+      tc(n, 6, eventDesc(e), 1),
+      tc(n, 7, e.url, 1),
+      tc(n, 8, e.screenshot ? "Y" : "-", 3),
+      tc(n, 9, e.testResult ? TEST_RESULT_LABEL[e.testResult] : "", 3),
     ], 20));
   });
 

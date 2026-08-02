@@ -2,8 +2,7 @@
 chcp 65001 > nul
 set PORT=3000
 set DIR=%~dp0
-set ROOT_DIR=%~dp0..\..
-set ENV_FILE=%ROOT_DIR%\.env.local
+set ENV_FILE=%DIR%.env.local
 set CONFIG_JS=%DIR%config.js
 
 set AUTH_CLIENT_ID=

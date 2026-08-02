@@ -2,8 +2,7 @@
 
 PORT=3000
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-ROOT_DIR="$(dirname "$(dirname "$DIR")")"
-ENV_FILE="$ROOT_DIR/.env.local"
+ENV_FILE="$DIR/.env.local"
 CONFIG_JS="$DIR/config.js"
 
 # .env.local 읽기
