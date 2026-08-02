@@ -1,0 +1,2004 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>업무 링크 관리자</title>
+<style>
+  :root {
+    --bg: #f0f2f5;
+    --surface: #ffffff;
+    --surface2: #f8f9fa;
+    --border: #d9dde3;
+    --border2: #e8eaed;
+    --text: #1a1d23;
+    --text2: #5a6270;
+    --text3: #8c95a2;
+    --primary: #2563eb;
+    --primary-hover: #1d4ed8;
+    --primary-light: #eff6ff;
+    --success: #16a34a;
+    --success-light: #f0fdf4;
+    --danger: #dc2626;
+    --danger-light: #fef2f2;
+    --warning: #d97706;
+    --warning-light: #fffbeb;
+    --shadow: 0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.06);
+    --shadow-md: 0 4px 6px rgba(0,0,0,.07), 0 2px 4px rgba(0,0,0,.06);
+    --radius: 6px;
+    --radius-lg: 10px;
+  }
+  [data-theme="dark"] {
+    --bg: #0f1117;
+    --surface: #1a1d27;
+    --surface2: #22263a;
+    --border: #2e3347;
+    --border2: #252a3d;
+    --text: #e8ecf0;
+    --text2: #8b93a8;
+    --text3: #555f78;
+    --primary: #3b82f6;
+    --primary-hover: #60a5fa;
+    --primary-light: #1e2a4a;
+    --success: #22c55e;
+    --success-light: #0f2a1c;
+    --danger: #ef4444;
+    --danger-light: #2a1010;
+    --warning: #f59e0b;
+    --warning-light: #2a2010;
+    --shadow: 0 1px 3px rgba(0,0,0,.3);
+    --shadow-md: 0 4px 6px rgba(0,0,0,.4);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Malgun Gothic', '맑은 고딕', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-size: 13px;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.5;
+    min-height: 100vh;
+  }
+
+  /* ─── Header ─── */
+  .header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 0 24px;
+    height: 52px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: var(--shadow);
+  }
+  .header-left { display: flex; align-items: center; gap: 10px; }
+  .header-icon {
+    width: 30px; height: 30px;
+    background: var(--primary);
+    border-radius: 7px;
+    display: flex; align-items: center; justify-content: center;
+    color: #fff;
+    font-size: 15px;
+  }
+  .header-title { font-size: 15px; font-weight: 700; color: var(--text); }
+  .header-sub { font-size: 11px; color: var(--text3); margin-top: 1px; }
+  .header-right { display: flex; align-items: center; gap: 8px; }
+
+  /* ─── Layout ─── */
+  .container { max-width: 1200px; margin: 0 auto; padding: 20px 24px; }
+
+  /* ─── Card ─── */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow);
+    margin-bottom: 16px;
+  }
+  .card-header {
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--border2);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .card-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    gap: 7px;
+  }
+  .card-title .icon { font-size: 15px; }
+  .card-body { padding: 16px 20px; }
+
+  /* ─── Search ─── */
+  .search-row { display: flex; gap: 10px; align-items: center; }
+  .search-wrap { position: relative; flex: 1; }
+  .search-icon {
+    position: absolute; left: 10px; top: 50%;
+    transform: translateY(-50%);
+    color: var(--text3); font-size: 14px; pointer-events: none;
+  }
+  .search-input {
+    width: 100%; height: 34px; padding: 0 10px 0 32px;
+    border: 1px solid var(--border); border-radius: var(--radius);
+    background: var(--surface2); color: var(--text); font-size: 13px;
+    outline: none; transition: border-color .15s, box-shadow .15s;
+  }
+  .search-input:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 15%, transparent);
+  }
+  .search-input::placeholder { color: var(--text3); }
+  .filter-select {
+    height: 34px; padding: 0 8px;
+    border: 1px solid var(--border); border-radius: var(--radius);
+    background: var(--surface2); color: var(--text);
+    font-size: 12px; outline: none; cursor: pointer; min-width: 100px;
+  }
+  .badge-count {
+    display: inline-flex; align-items: center; justify-content: center;
+    background: var(--primary); color: #fff; font-size: 10px;
+    font-weight: 700; border-radius: 10px; padding: 1px 7px; min-width: 20px;
+  }
+
+  /* ─── Form ─── */
+  .form-grid { display: grid; grid-template-columns: 200px 1fr 1fr; gap: 10px; }
+  .form-grid-wide { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+  .form-group { display: flex; flex-direction: column; gap: 4px; }
+  .form-label { font-size: 11px; font-weight: 600; color: var(--text2); text-transform: uppercase; letter-spacing: .04em; }
+  .form-control {
+    height: 34px; padding: 0 10px;
+    border: 1px solid var(--border); border-radius: var(--radius);
+    background: var(--surface); color: var(--text); font-size: 13px;
+    outline: none; transition: border-color .15s, box-shadow .15s; font-family: inherit;
+  }
+  .form-control:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 15%, transparent);
+  }
+  textarea.form-control { height: 60px; padding: 8px 10px; resize: vertical; min-height: 34px; }
+  .form-actions {
+    display: flex; justify-content: flex-end; gap: 8px;
+    margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border2);
+  }
+  .folder-picker-row { display: flex; gap: 4px; align-items: center; }
+  .folder-picker-row .form-control { flex: 1; }
+
+  /* ─── Buttons ─── */
+  .btn {
+    display: inline-flex; align-items: center; gap: 5px;
+    height: 32px; padding: 0 14px; border: 1px solid transparent;
+    border-radius: var(--radius); font-size: 12px; font-weight: 600;
+    cursor: pointer; transition: background .15s, border-color .15s, color .15s, opacity .15s;
+    font-family: inherit; white-space: nowrap;
+  }
+  .btn:active { transform: translateY(1px); }
+  .btn-primary { background: var(--primary); color: #fff; }
+  .btn-primary:hover { background: var(--primary-hover); }
+  .btn-outline { background: transparent; border-color: var(--border); color: var(--text2); }
+  .btn-outline:hover { background: var(--surface2); border-color: var(--text3); color: var(--text); }
+  .btn-ghost { background: transparent; border-color: transparent; color: var(--text3); }
+  .btn-ghost:hover { background: var(--surface2); color: var(--text); }
+  .btn-danger-ghost { background: transparent; border-color: transparent; color: var(--text3); }
+  .btn-danger-ghost:hover { background: var(--danger-light); color: var(--danger); }
+  .btn-icon { width: 28px; height: 28px; padding: 0; display: inline-flex; align-items: center; justify-content: center; border-radius: var(--radius); font-size: 14px; }
+  .btn-sm { height: 26px; padding: 0 10px; font-size: 11px; }
+  .btn-copy { background: var(--primary-light); border-color: transparent; color: var(--primary); }
+  .btn-copy:hover { background: var(--primary); color: #fff; }
+  .btn-copy.copied { background: var(--success-light); color: var(--success); }
+  .btn-winr { background: var(--warning-light); border-color: transparent; color: var(--warning); font-size: 10px; }
+  .btn-winr:hover { background: var(--warning); color: #fff; }
+  .btn-open { background: var(--success-light); border-color: transparent; color: var(--success); }
+  .btn-open:hover { background: var(--success); color: #fff; }
+
+  /* ─── View Toggle ─── */
+  .view-toggle { display: flex; gap: 4px; }
+  .view-btn {
+    height: 26px; padding: 0 10px; border: 1px solid var(--border);
+    border-radius: var(--radius); background: transparent; color: var(--text3);
+    font-size: 11px; font-weight: 600; cursor: pointer; transition: all .15s; font-family: inherit;
+  }
+  .view-btn.active { background: var(--primary); border-color: var(--primary); color: #fff; }
+  .view-btn:hover:not(.active) { background: var(--surface2); color: var(--text); }
+
+  /* ─── Bookmark / Folder View ─── */
+  .bookmark-view { padding: 12px 20px 16px; }
+  .bm-folder { border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 8px; overflow: hidden; }
+  .bm-folder-nested {
+    border: none; border-radius: 0; margin-bottom: 0;
+    border-top: 1px solid var(--border2); overflow: hidden;
+  }
+  .bm-folder-header {
+    display: flex; align-items: center; gap: 8px;
+    padding: 9px 14px; background: var(--surface2);
+    cursor: pointer; user-select: none; transition: background .1s;
+  }
+  .bm-folder-nested > .bm-folder-header { background: var(--surface); }
+  .bm-folder-header:hover { background: var(--border2); }
+  .bm-folder-toggle { font-size: 9px; color: var(--text3); transition: transform .15s; display: inline-block; }
+  .bm-folder.open > .bm-folder-header .bm-folder-toggle { transform: rotate(90deg); }
+  .bm-folder-nested.open > .bm-folder-header .bm-folder-toggle { transform: rotate(90deg); }
+  .bm-folder-icon { font-size: 13px; }
+  .bm-folder-name { font-size: 12px; font-weight: 600; flex: 1; }
+  .bm-folder-badge {
+    font-size: 10px; color: var(--text3);
+    background: var(--surface); border: 1px solid var(--border2);
+    border-radius: 10px; padding: 1px 7px;
+  }
+  .bm-folder-items { display: none; border-top: 1px solid var(--border2); }
+  .bm-folder.open > .bm-folder-items,
+  .bm-folder-nested.open > .bm-folder-items { display: block; }
+  .bm-item {
+    display: flex; align-items: center; gap: 8px;
+    padding: 7px 14px; border-bottom: 1px solid var(--border2); transition: background .1s;
+  }
+  .bm-item:last-child { border-bottom: none; }
+  .bm-item:hover { background: var(--surface2); }
+  .bm-item-icon { font-size: 12px; flex-shrink: 0; }
+  .bm-item-info { flex: 1; min-width: 0; }
+  .bm-item-title { font-size: 12px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .bm-item-path { font-size: 10px; color: var(--text3); font-family: 'Consolas', 'Courier New', monospace; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .bm-item-actions { display: flex; gap: 4px; flex-shrink: 0; align-items: center; }
+
+  /* ─── Table ─── */
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  thead th {
+    background: var(--surface2); color: var(--text3); font-size: 11px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: .05em; padding: 9px 12px; text-align: left;
+    border-bottom: 1px solid var(--border); white-space: nowrap; cursor: pointer; user-select: none;
+  }
+  thead th:hover { color: var(--text); }
+  thead th .sort-icon { font-size: 10px; margin-left: 4px; opacity: .4; }
+  thead th.sorted .sort-icon { opacity: 1; color: var(--primary); }
+  tbody tr { border-bottom: 1px solid var(--border2); transition: background .1s; }
+  tbody tr:last-child { border-bottom: none; }
+  tbody tr:hover { background: var(--surface2); }
+  tbody tr.highlight { animation: rowhl .8s ease-out; }
+  @keyframes rowhl {
+    0% { background: color-mix(in srgb, var(--primary) 12%, transparent); }
+    100% { background: transparent; }
+  }
+  td { padding: 9px 12px; vertical-align: middle; }
+  td.td-no { color: var(--text3); font-size: 11px; width: 36px; text-align: center; }
+  td.td-cat { width: 160px; }
+  td.td-title { font-weight: 600; color: var(--text); max-width: 200px; }
+  td.td-path { font-family: 'Consolas', 'Courier New', monospace; font-size: 11px; color: var(--text2); max-width: 280px; }
+  td.td-memo { color: var(--text3); max-width: 120px; }
+  td.td-date { color: var(--text3); font-size: 11px; width: 90px; white-space: nowrap; }
+  td.td-actions { width: 180px; white-space: nowrap; }
+  .cell-overflow { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: inherit; display: block; }
+
+  /* ─── Category Badge ─── */
+  .cat-badge {
+    display: inline-flex; align-items: center; padding: 2px 8px;
+    border-radius: 10px; font-size: 10px; font-weight: 600; white-space: nowrap;
+    max-width: 160px; overflow: hidden; text-overflow: ellipsis;
+  }
+  .path-icon { font-size: 10px; margin-right: 4px; }
+
+  /* ─── Import section ─── */
+  .import-textarea {
+    width: 100%; height: 100px; padding: 10px 12px;
+    border: 1px solid var(--border); border-radius: var(--radius);
+    background: var(--surface2); color: var(--text);
+    font-family: 'Consolas', 'Courier New', monospace; font-size: 12px;
+    resize: vertical; outline: none; transition: border-color .15s;
+  }
+  .import-textarea:focus { border-color: var(--primary); }
+  .import-hint { font-size: 11px; color: var(--text3); margin-top: 6px; line-height: 1.6; }
+  .import-hint code {
+    background: var(--surface2); border: 1px solid var(--border2); border-radius: 3px;
+    padding: 0 4px; font-family: 'Consolas', 'Courier New', monospace; color: var(--primary);
+  }
+
+  /* ─── Empty state ─── */
+  .empty-state { text-align: center; padding: 48px 20px; color: var(--text3); }
+  .empty-state .empty-icon { font-size: 40px; margin-bottom: 12px; display: block; }
+  .empty-state p { font-size: 13px; }
+
+  /* ─── Toast ─── */
+  #toast-container { position: fixed; bottom: 24px; right: 24px; z-index: 9999; display: flex; flex-direction: column; gap: 8px; }
+  .toast {
+    display: flex; align-items: center; gap: 8px; padding: 10px 16px;
+    border-radius: var(--radius); font-size: 13px; font-weight: 500;
+    box-shadow: var(--shadow-md); animation: slideIn .2s ease-out; max-width: 320px; color: #fff;
+  }
+  @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+  .toast-success { background: var(--success); }
+  .toast-error   { background: var(--danger); }
+  .toast-info    { background: var(--primary); }
+
+  /* ─── Modal ─── */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,.4); z-index: 1000;
+    align-items: center; justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius-lg); padding: 24px;
+    width: 500px; max-width: 95vw; box-shadow: var(--shadow-md);
+  }
+  .modal-title { font-size: 15px; font-weight: 700; margin-bottom: 16px; }
+  .modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 20px; }
+
+  /* ─── Folder Management Modal ─── */
+  .folder-modal { width: 560px; max-height: 75vh; display: flex; flex-direction: column; }
+  .folder-modal-toolbar {
+    display: flex; align-items: center; gap: 8px;
+    margin-bottom: 10px; flex-shrink: 0;
+  }
+  .folder-modal-hint { font-size: 11px; color: var(--text3); }
+  .folder-tree-edit {
+    overflow-y: auto; flex: 1; min-height: 0;
+    border: 1px solid var(--border); border-radius: var(--radius);
+    background: var(--surface2);
+  }
+  .folder-tree-node {
+    display: flex; align-items: center; gap: 6px;
+    padding: 7px 10px; border-bottom: 1px solid var(--border2);
+    transition: background .1s;
+  }
+  .folder-tree-node:last-child { border-bottom: none; }
+  .folder-tree-node:hover { background: var(--border2); }
+  .folder-tree-connector { color: var(--text3); font-size: 11px; flex-shrink: 0; font-family: monospace; }
+  .folder-tree-icon { font-size: 12px; flex-shrink: 0; }
+  .folder-tree-name { flex: 1; font-size: 12px; font-weight: 500; }
+  .folder-tree-count { font-size: 10px; color: var(--text3); flex-shrink: 0; padding: 1px 5px; background: var(--surface); border: 1px solid var(--border2); border-radius: 8px; }
+  .folder-tree-actions { display: flex; gap: 2px; flex-shrink: 0; }
+  .folder-tree-btn {
+    width: 22px; height: 22px; border: none; border-radius: 4px;
+    background: transparent; color: var(--text3); font-size: 11px;
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    transition: background .1s, color .1s; font-family: inherit;
+  }
+  .folder-tree-btn:hover { background: var(--surface); color: var(--text); }
+  .folder-tree-btn.danger:hover { background: var(--danger-light); color: var(--danger); }
+  .folder-tree-btn:disabled { opacity: .3; cursor: not-allowed; }
+
+  /* ─── Theme Toggle ─── */
+  .theme-toggle {
+    width: 34px; height: 34px; display: flex; align-items: center; justify-content: center;
+    border: 1px solid var(--border); border-radius: var(--radius);
+    background: var(--surface2); cursor: pointer; font-size: 16px;
+    transition: background .15s; color: var(--text);
+  }
+  .theme-toggle:hover { background: var(--border); }
+
+  /* ─── Stats ─── */
+  .stats-row { display: flex; gap: 10px; margin-bottom: 16px; }
+  .stat-card { flex: 1; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 12px 16px; box-shadow: var(--shadow); }
+  .stat-value { font-size: 22px; font-weight: 700; color: var(--primary); }
+  .stat-label { font-size: 11px; color: var(--text3); margin-top: 2px; }
+
+  /* ─── Section collapse ─── */
+  .collapse-btn { background: none; border: none; cursor: pointer; color: var(--text3); font-size: 12px; padding: 2px 4px; border-radius: 3px; transition: color .15s; }
+  .collapse-btn:hover { color: var(--text); background: var(--surface2); }
+  .collapsible { transition: all .2s; }
+  .collapsible.collapsed { display: none; }
+
+  /* ─── Backup ─── */
+  .backup-dir-chip {
+    display: inline-flex; align-items: center; height: 28px; padding: 0 10px;
+    border-radius: var(--radius); background: var(--surface2); border: 1px solid var(--border);
+    font-size: 11px; color: var(--text2); white-space: nowrap; max-width: 150px;
+    overflow: hidden; text-overflow: ellipsis; cursor: pointer; transition: background .15s;
+  }
+  .backup-dir-chip:hover { background: var(--border); color: var(--text); }
+  .backup-dir-chip.active { border-color: var(--success); color: var(--success); background: var(--success-light); }
+  .header-sep { width: 1px; height: 20px; background: var(--border); display: inline-block; }
+  .backup-file-item {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 9px 14px; border-radius: var(--radius); border: 1px solid var(--border2);
+    margin-bottom: 6px; cursor: pointer; transition: background .1s, border-color .1s;
+  }
+  .backup-file-item:hover { background: var(--primary-light); border-color: var(--primary); }
+  .backup-file-name { font-family: 'Consolas', 'Courier New', monospace; font-size: 12px; color: var(--text); font-weight: 600; }
+  .backup-file-size { font-size: 11px; color: var(--text3); flex-shrink: 0; margin-left: 12px; }
+
+  /* ─── Restore modal ─── */
+  .restore-modal { width: 580px; max-height: 70vh; display: flex; flex-direction: column; }
+  .restore-modal .modal-title { flex-shrink: 0; }
+  .restore-file-list { overflow-y: auto; flex: 1; min-height: 0; }
+  .restore-info { font-size: 12px; color: var(--text2); background: var(--warning-light); border: 1px solid var(--border2); border-radius: var(--radius); padding: 8px 12px; margin-bottom: 10px; flex-shrink: 0; }
+
+  /* ─── Scrollbar ─── */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--text3); }
+
+  /* ─── Modal Tabs ─── */
+  .modal-tabs { display: flex; gap: 0; margin-bottom: 14px; border-bottom: 2px solid var(--border); }
+  .modal-tab {
+    padding: 6px 16px; border: none; border-bottom: 2px solid transparent; margin-bottom: -2px;
+    background: transparent; color: var(--text3); font-size: 12px; font-weight: 600;
+    cursor: pointer; transition: color .15s; font-family: inherit;
+  }
+  .modal-tab:hover { color: var(--text); }
+  .modal-tab.active { color: var(--primary); border-bottom-color: var(--primary); }
+
+  /* ─── Chrome Bookmark Import ─── */
+  .chrome-drop-zone {
+    border: 2px dashed var(--border); border-radius: var(--radius);
+    padding: 32px 20px; text-align: center; cursor: pointer;
+    transition: border-color .15s, background .15s; position: relative;
+  }
+  .chrome-drop-zone:hover,
+  .chrome-drop-zone.drag-over { border-color: var(--primary); background: var(--primary-light); }
+  .chrome-drop-zone input[type=file] {
+    position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
+  }
+  .chrome-drop-icon { font-size: 32px; display: block; margin-bottom: 8px; }
+  .chrome-drop-text { font-size: 13px; color: var(--text2); font-weight: 500; }
+  .chrome-drop-hint { font-size: 11px; color: var(--text3); margin-top: 4px; }
+  .chrome-preview {
+    margin-top: 12px; max-height: 180px; overflow-y: auto;
+    border: 1px solid var(--border); border-radius: var(--radius);
+    background: var(--surface2); padding: 8px 12px;
+    font-size: 11px;
+  }
+  .chrome-preview-row { padding: 2px 0; color: var(--text2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .chrome-preview-row.folder { color: var(--primary); font-weight: 600; }
+  .chrome-preview-stats { font-size: 12px; color: var(--text2); margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--border2); }
+
+  @media (max-width: 900px) {
+    .form-grid { grid-template-columns: 1fr; }
+    .form-grid-wide { grid-template-columns: 1fr; }
+    .stats-row { flex-wrap: wrap; }
+    td.td-memo, td.td-date { display: none; }
+    .header-sub { display: none; }
+    .backup-dir-chip { max-width: 90px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<header class="header">
+  <div class="header-left">
+    <div class="header-icon">🔗</div>
+    <div>
+      <div class="header-title">업무 링크 관리자</div>
+      <div class="header-sub">공유폴더 · Wiki · 가이드 링크 통합 관리</div>
+    </div>
+  </div>
+  <div class="header-right">
+    <button class="btn btn-outline btn-sm" onclick="openFolderModal()">📁 폴더 관리</button>
+    <button class="btn btn-outline btn-sm" onclick="openImportModal()">📥 가져오기</button>
+    <button class="btn btn-outline btn-sm" onclick="exportData()">📤 내보내기</button>
+    <span class="header-sep"></span>
+    <span class="backup-dir-chip" id="backupDirChip" onclick="pickBackupDir()" title="백업 폴더 설정 (클릭)">📂 폴더 미설정</span>
+    <button class="btn btn-outline btn-sm" onclick="manualBackup()" title="현재 데이터를 백업 폴더에 즉시 저장">💾 백업</button>
+    <button class="btn btn-outline btn-sm" onclick="openRestoreModal()" title="백업 파일에서 데이터 복원">🔄 복원</button>
+    <button class="theme-toggle" onclick="toggleTheme()" title="테마 전환" id="themeBtn">🌙</button>
+  </div>
+</header>
+
+<div class="container">
+
+  <!-- Stats -->
+  <div class="stats-row" id="statsRow">
+    <div class="stat-card">
+      <div class="stat-value" id="statTotal">0</div>
+      <div class="stat-label">전체 항목</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value" id="statFolders">0</div>
+      <div class="stat-label">최상위 폴더</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value" id="statFiles">0</div>
+      <div class="stat-label">파일 경로</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value" id="statUrls">0</div>
+      <div class="stat-label">URL / Wiki</div>
+    </div>
+  </div>
+
+  <!-- Search -->
+  <div class="card">
+    <div class="card-body">
+      <div class="search-row">
+        <div class="search-wrap">
+          <span class="search-icon">🔍</span>
+          <input type="text" class="search-input" id="searchInput"
+            placeholder="제목, 경로, 메모, 폴더 검색... (초성 지원: ㄱ, ㄴ, ㄷ...)"
+            oninput="renderTable()">
+        </div>
+        <select class="filter-select" id="catFilter" onchange="renderTable()">
+          <option value="">전체 폴더</option>
+        </select>
+        <select class="filter-select" id="typeFilter" onchange="renderTable()">
+          <option value="">전체 유형</option>
+          <option value="file">파일 경로</option>
+          <option value="url">URL / Wiki</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add Form -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">
+        <span class="icon">✏️</span>
+        <span id="formTitle">새 링크 추가</span>
+      </div>
+      <div style="display:flex;gap:6px;align-items:center;">
+        <button class="collapse-btn" onclick="toggleForm()" id="formCollapseBtn">접기 ▲</button>
+      </div>
+    </div>
+    <div class="card-body collapsible" id="formBody">
+      <div class="form-grid">
+        <div class="form-group">
+          <label class="form-label">폴더 *</label>
+          <div class="folder-picker-row">
+            <select class="form-control" id="fFolderSelect">
+              <option value="">-- 폴더 선택 --</option>
+            </select>
+            <button type="button" class="btn btn-ghost btn-sm" onclick="openFolderModal()" title="폴더 관리">📁</button>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">제목 *</label>
+          <input type="text" class="form-control" id="fTitle" placeholder="링크 제목">
+        </div>
+        <div class="form-group">
+          <label class="form-label">경로 / URL *</label>
+          <input type="text" class="form-control" id="fPath" placeholder="\\\\server\\share\\ 또는 https://...">
+        </div>
+      </div>
+      <div class="form-grid-wide">
+        <div class="form-group">
+          <label class="form-label">메모</label>
+          <textarea class="form-control" id="fMemo" placeholder="간단한 설명 (선택)"></textarea>
+        </div>
+        <div class="form-group">
+          <label class="form-label">단축키 태그 (공백 구분)</label>
+          <input type="text" class="form-control" id="fTags" placeholder="예: 개발 운영 배포">
+        </div>
+      </div>
+      <div class="form-actions">
+        <input type="hidden" id="editId">
+        <button class="btn btn-outline" onclick="clearForm()">초기화</button>
+        <button class="btn btn-primary" onclick="saveItem()">
+          <span id="saveBtnTxt">저장</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- List -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">
+        <span class="icon">📋</span>
+        저장된 링크 목록
+        <span class="badge-count" id="listCount">0</span>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <div class="view-toggle">
+          <button class="view-btn active" id="viewBtnTable" onclick="setView('table')">☰ 목록</button>
+          <button class="view-btn" id="viewBtnBookmark" onclick="setView('bookmark')">📁 폴더</button>
+        </div>
+        <button class="btn btn-ghost btn-sm" onclick="clearAllConfirm()" title="전체 삭제">🗑 전체 삭제</button>
+      </div>
+    </div>
+    <div class="card-body" style="padding:0;">
+      <!-- Table View -->
+      <div id="tableViewWrap">
+        <div class="table-wrap">
+          <table id="mainTable">
+            <thead>
+              <tr>
+                <th class="td-no">#</th>
+                <th onclick="setSort('category')">폴더 경로 <span class="sort-icon">↕</span></th>
+                <th onclick="setSort('title')">제목 <span class="sort-icon">↕</span></th>
+                <th onclick="setSort('path')">경로 / URL <span class="sort-icon">↕</span></th>
+                <th>메모</th>
+                <th onclick="setSort('createdAt')">등록일 <span class="sort-icon">↕</span></th>
+                <th style="text-align:center;">작업</th>
+              </tr>
+            </thead>
+            <tbody id="tableBody"></tbody>
+          </table>
+          <div class="empty-state" id="emptyState" style="display:none;">
+            <span class="empty-icon">📭</span>
+            <p>저장된 링크가 없습니다.<br>위 폼에서 새 링크를 추가해 보세요.</p>
+          </div>
+        </div>
+      </div>
+      <!-- Bookmark / Folder View -->
+      <div id="bookmarkViewWrap" style="display:none;">
+        <div class="bookmark-view" id="bookmarkView"></div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /container -->
+
+<!-- Folder Management Modal -->
+<div class="modal-overlay" id="folderModal">
+  <div class="modal folder-modal">
+    <div class="modal-title">📁 폴더 관리</div>
+    <div class="folder-modal-toolbar">
+      <button class="btn btn-primary btn-sm" onclick="addTopLevelFolder()">+ 최상위 폴더 추가</button>
+      <span class="folder-modal-hint">최상위 포함 최대 5단계까지 지원</span>
+    </div>
+    <div class="folder-tree-edit" id="folderTreeEdit">
+      <p style="color:var(--text3);text-align:center;padding:20px;font-size:12px;">폴더가 없습니다. 위 버튼으로 추가하세요.</p>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeFolderModal()">닫기</button>
+    </div>
+  </div>
+</div>
+
+<!-- Import Modal -->
+<div class="modal-overlay" id="importModal">
+  <div class="modal" style="width:580px;">
+    <div class="modal-title">📥 링크 가져오기</div>
+    <div class="modal-tabs">
+      <button class="modal-tab active" id="tabBtnText"   onclick="setImportTab('text')">✏️ 텍스트 직접 입력</button>
+      <button class="modal-tab"        id="tabBtnChrome" onclick="setImportTab('chrome')">🔖 Chrome 북마크</button>
+    </div>
+
+    <!-- 텍스트 탭 -->
+    <div id="importTabText">
+      <textarea class="import-textarea" id="importText"
+        placeholder="폴더경로|제목|경로/URL|메모&#10;예)&#10;Wiki|팀 위키 홈|http://wiki.internal/home|내부 위키&#10;Wiki/개발|개발 가이드|http://wiki.internal/guide/dev|&#10;공유폴더/운영|배포 스크립트|\\\\192.168.1.10\\deploy|매주 금요일&#10;&#10;폴더는 슬래시(/)로 계층 구분. 메모는 생략 가능."></textarea>
+      <div class="import-hint">
+        형식: <code>폴더경로|제목|경로/URL|메모</code> (한 줄에 하나씩)<br>
+        폴더 계층: <code>Wiki/개발/프론트엔드</code> (슬래시로 구분, 없으면 자동 생성)<br>
+        구분자는 <code>|</code> 또는 <code>Tab</code> 가능. 메모·태그 생략 가능.
+      </div>
+    </div>
+
+    <!-- Chrome 북마크 탭 -->
+    <div id="importTabChrome" style="display:none;">
+      <div class="chrome-drop-zone" id="chromeDropZone"
+           ondragover="event.preventDefault();this.classList.add('drag-over')"
+           ondragleave="this.classList.remove('drag-over')"
+           ondrop="onChromeFileDrop(event)">
+        <input type="file" id="chromeFileInput" accept=".html,.htm" onchange="onChromeFileSelect(this)">
+        <span class="chrome-drop-icon">🔖</span>
+        <div class="chrome-drop-text">Chrome 북마크 HTML 파일을 선택하거나 드래그하세요</div>
+        <div class="chrome-drop-hint">Chrome → 북마크 → 북마크 관리자 → ⋮ → 북마크 내보내기 (.html)</div>
+      </div>
+      <div id="chromePreview" style="display:none;">
+        <div class="chrome-preview" id="chromePreviewList"></div>
+        <div class="chrome-preview-stats" id="chromePreviewStats"></div>
+      </div>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeImportModal()">취소</button>
+      <button class="btn btn-primary" id="importDoBtn" onclick="doImportActive()">가져오기</button>
+    </div>
+  </div>
+</div>
+
+<!-- Backup Restore Modal -->
+<div class="modal-overlay" id="restoreModal">
+  <div class="modal restore-modal">
+    <div class="modal-title">🔄 백업 파일에서 복원</div>
+    <div class="restore-info">
+      ⚠️ 선택한 백업 파일로 복원하면 현재 데이터가 교체됩니다. 현재 데이터를 먼저 백업하는 것을 권장합니다.
+    </div>
+    <div class="restore-file-list" id="backupFileListWrap">
+      <p style="color:var(--text3);font-size:12px;text-align:center;padding:20px 0;">파일 목록 로딩 중...</p>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeRestoreModal()">닫기</button>
+    </div>
+  </div>
+</div>
+
+<!-- Move Folder Modal -->
+<div class="modal-overlay" id="moveFolderModal">
+  <div class="modal" style="max-width:420px;">
+    <div class="modal-title">📂 폴더 이동</div>
+    <div style="margin-bottom:12px;font-size:13px;color:var(--text2);">
+      이동할 위치를 선택하세요. (최대 5단계 제한)
+    </div>
+    <div style="margin-bottom:6px;font-size:12px;color:var(--text3);">이동 대상:</div>
+    <select id="moveFolderTarget" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;background:var(--bg2);color:var(--text1);font-size:13px;margin-bottom:16px;">
+    </select>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeMoveFolderModal()">취소</button>
+      <button class="btn btn-primary" onclick="confirmMoveFolder()">이동</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast container -->
+<div id="toast-container"></div>
+
+<script>
+// ── Storage keys ──
+const STORAGE_KEY = 'plm_links_v2';
+const FOLDER_KEY  = 'plm_folders_v1';
+
+// ── State ──
+let items   = [];
+let folders = [];
+let sortField   = 'createdAt';
+let sortDir     = -1;
+let currentView = 'table';
+let movingFolderId = null;
+
+// ── Korean Consonant ──
+const CHOSUNG = ['ㄱ','ㄲ','ㄴ','ㄷ','ㄸ','ㄹ','ㅁ','ㅂ','ㅃ','ㅅ','ㅆ','ㅇ','ㅈ','ㅉ','ㅊ','ㅋ','ㅌ','ㅍ','ㅎ'];
+function getChosung(str) {
+  return str.split('').map(ch => {
+    const code = ch.charCodeAt(0) - 0xAC00;
+    if (code < 0 || code > 11171) return ch;
+    return CHOSUNG[Math.floor(code / 28 / 21)];
+  }).join('');
+}
+function matchChosung(text, query) {
+  if (!text) return false;
+  const t = String(text).toLowerCase();
+  const q = query.toLowerCase();
+  if (t.includes(q)) return true;
+  const tCho = getChosung(t), qCho = getChosung(q);
+  return tCho.includes(qCho) || tCho.includes(q);
+}
+
+// ── ID generator ──
+function genId(prefix) {
+  return (prefix || 'id_') + Date.now() + '_' + Math.random().toString(36).slice(2, 6);
+}
+
+// ── Category colors ──
+const CAT_COLORS = [
+  ['#3b82f6','#eff6ff'], ['#10b981','#f0fdf4'], ['#f59e0b','#fffbeb'],
+  ['#8b5cf6','#f5f3ff'], ['#ef4444','#fef2f2'], ['#06b6d4','#ecfeff'],
+  ['#ec4899','#fdf2f8'], ['#64748b','#f8fafc'],
+];
+const catColorMap = {};
+let catColorIdx = 0;
+function getCatColor(cat) {
+  if (!catColorMap[cat]) {
+    catColorMap[cat] = CAT_COLORS[catColorIdx % CAT_COLORS.length];
+    catColorIdx++;
+  }
+  return catColorMap[cat];
+}
+
+// ── Path type ──
+function pathType(path) {
+  if (!path) return 'url';
+  const p = path.trim();
+  if (p.startsWith('\\\\') || p.startsWith('//') || p.startsWith('file://') || /^[A-Za-z]:[\\\/]/.test(p)) return 'file';
+  return 'url';
+}
+
+// ═══════════════════════════════════════════
+//  FOLDER MANAGEMENT
+// ═══════════════════════════════════════════
+
+function loadFolders() {
+  try {
+    const raw = localStorage.getItem(FOLDER_KEY);
+    folders = raw ? JSON.parse(raw) : [];
+  } catch { folders = []; }
+}
+function saveFolders() { localStorage.setItem(FOLDER_KEY, JSON.stringify(folders)); }
+
+function getFolderById(id) { return folders.find(f => f.id === id) || null; }
+
+function getFolderChildren(parentId) {
+  const pid = parentId || null;
+  return folders
+    .filter(f => f.parentId === pid)
+    .sort((a, b) => (a.order || 0) - (b.order || 0) || a.name.localeCompare(b.name, 'ko'));
+}
+
+function getFolderDepth(id) {
+  let depth = 0, cur = getFolderById(id);
+  while (cur && cur.parentId && depth < 10) { depth++; cur = getFolderById(cur.parentId); }
+  return depth;
+}
+
+function getFolderPath(id) {
+  if (!id) return '미분류';
+  const parts = [];
+  let cur = getFolderById(id);
+  while (cur) { parts.unshift(cur.name); cur = cur.parentId ? getFolderById(cur.parentId) : null; }
+  return parts.join(' > ');
+}
+
+function getTopLevelFolder(id) {
+  if (!id) return null;
+  let cur = getFolderById(id);
+  while (cur && cur.parentId) cur = getFolderById(cur.parentId);
+  return cur;
+}
+
+function getAllDescendantIds(id) {
+  const result = [];
+  const queue = [id];
+  while (queue.length) {
+    const cur = queue.shift();
+    getFolderChildren(cur).forEach(c => { result.push(c.id); queue.push(c.id); });
+  }
+  return result;
+}
+
+function countItemsInFolderTree(folderId, itemList) {
+  const ids = new Set([folderId, ...getAllDescendantIds(folderId)]);
+  return (itemList || items).filter(i => ids.has(i.folderId)).length;
+}
+
+function createFolder(name, parentId) {
+  if (!name || !name.trim()) return null;
+  if (parentId && getFolderDepth(parentId) >= 4) {
+    showToast('최대 5단계(최상위+하위4단계)까지 폴더를 만들 수 있습니다.', 'error');
+    return null;
+  }
+  const sibs = folders.filter(f => f.parentId === (parentId || null));
+  const folder = { id: genId('fldr_'), name: name.trim(), parentId: parentId || null, order: sibs.length };
+  folders.push(folder);
+  saveFolders();
+  return folder;
+}
+
+function updateFolderName(id, newName) {
+  const f = getFolderById(id);
+  if (f && newName && newName.trim()) { f.name = newName.trim(); saveFolders(); }
+}
+
+function removeFolder(id) {
+  const toDelete = [id, ...getAllDescendantIds(id)];
+  const affected = items.filter(i => toDelete.includes(i.folderId));
+  if (affected.length > 0) {
+    if (!confirm(`이 폴더(하위 포함)에 ${affected.length}개 항목이 있습니다.\n삭제 시 해당 항목들의 폴더가 '미분류'로 변경됩니다. 계속하시겠습니까?`)) return;
+    affected.forEach(item => { item.folderId = null; item.category = '미분류'; });
+    save();
+  } else {
+    if (!confirm('이 폴더를 삭제하시겠습니까?')) return;
+  }
+  folders = folders.filter(f => !toDelete.includes(f.id));
+  saveFolders();
+  renderFolderTree();
+  updateFolderPicker();
+  updateCatFilter();
+  renderTable();
+  updateStats();
+  showToast('폴더가 삭제되었습니다.', 'info');
+}
+
+function moveFolderOrder(id, dir) {
+  const folder = getFolderById(id);
+  if (!folder) return;
+  const sibs = getFolderChildren(folder.parentId);
+  const idx = sibs.findIndex(f => f.id === id);
+  const swapIdx = idx + dir;
+  if (swapIdx < 0 || swapIdx >= sibs.length) return;
+  const other = sibs[swapIdx];
+  const tmpOrder = folder.order;
+  folder.order = other.order;
+  other.order = tmpOrder;
+  // ensure unique ordering
+  if (folder.order === other.order) { folder.order = swapIdx; other.order = idx; }
+  saveFolders();
+  renderFolderTree();
+  if (currentView === 'bookmark') renderBookmarkView();
+}
+
+// Derive category from top-level folder
+function deriveCategory(folderId) {
+  const top = getTopLevelFolder(folderId);
+  return top ? top.name : '미분류';
+}
+
+// Migrate old items (no folderId) → assign to matching folder
+function migrateItems() {
+  const needsMigration = items.filter(i => !i.folderId && i.category);
+  if (needsMigration.length === 0) return;
+  const catMap = {};
+  needsMigration.forEach(item => {
+    const cat = item.category || '미분류';
+    if (!catMap[cat]) {
+      let f = folders.find(x => x.parentId === null && x.name === cat);
+      if (!f) f = createFolder(cat, null);
+      catMap[cat] = f ? f.id : null;
+    }
+    if (catMap[cat]) item.folderId = catMap[cat];
+  });
+  save();
+}
+
+// Resolve "A/B/C" path to folderId, creating missing folders
+function resolveFolderPath(pathStr) {
+  const parts = pathStr.split('/').map(p => p.trim()).filter(Boolean);
+  if (parts.length === 0) return null;
+  let parentId = null;
+  for (const part of parts) {
+    let f = folders.find(x => x.parentId === parentId && x.name === part);
+    if (!f) f = createFolder(part, parentId);
+    if (!f) break;
+    parentId = f.id;
+  }
+  return parentId;
+}
+
+// ── Folder picker (form select) ──
+function updateFolderPicker() {
+  const sel = document.getElementById('fFolderSelect');
+  if (!sel) return;
+  const cur = sel.value;
+  const opts = ['<option value="">-- 폴더 선택 --</option>'];
+  function addOpts(parentId, depth) {
+    getFolderChildren(parentId).forEach(f => {
+      const indent = ' '.repeat(depth);
+      const arrow  = depth > 0 ? '└ ' : '';
+      opts.push(`<option value="${f.id}">${indent}${arrow}📁 ${esc(f.name)}</option>`);
+      addOpts(f.id, depth + 1);
+    });
+  }
+  addOpts(null, 0);
+  sel.innerHTML = opts.join('');
+  if (cur && [...sel.options].some(o => o.value === cur)) sel.value = cur;
+}
+
+// ── Folder management modal ──
+function openFolderModal() {
+  document.getElementById('folderModal').classList.add('open');
+  renderFolderTree();
+}
+function closeFolderModal() {
+  document.getElementById('folderModal').classList.remove('open');
+}
+
+function renderFolderTree() {
+  const container = document.getElementById('folderTreeEdit');
+  if (!container) return;
+  const lines = [];
+  function renderNode(parentId, depth, isLast) {
+    const children = getFolderChildren(parentId);
+    children.forEach((folder, i) => {
+      const last = i === children.length - 1;
+      const connector = depth === 0 ? '' : (last ? '└─ ' : '├─ ');
+      const indent = '    '.repeat(depth);
+      const itemCount = countItemsInFolderTree(folder.id);
+      const canAdd = getFolderDepth(folder.id) < 4;
+      const sibs = getFolderChildren(folder.parentId);
+      const sibIdx = sibs.findIndex(s => s.id === folder.id);
+      lines.push(`
+        <div class="folder-tree-node">
+          <span class="folder-tree-connector">${indent}${connector}</span>
+          <span class="folder-tree-icon">📁</span>
+          <span class="folder-tree-name">${esc(folder.name)}</span>
+          ${itemCount > 0 ? `<span class="folder-tree-count">${itemCount}</span>` : ''}
+          <div class="folder-tree-actions">
+            <button class="folder-tree-btn" onclick="moveFolderOrder('${folder.id}',-1)" title="위로" ${sibIdx === 0 ? 'disabled' : ''}>▲</button>
+            <button class="folder-tree-btn" onclick="moveFolderOrder('${folder.id}',1)"  title="아래로" ${sibIdx === sibs.length-1 ? 'disabled' : ''}>▼</button>
+            ${canAdd ? `<button class="folder-tree-btn" onclick="addSubFolder('${folder.id}')" title="하위 폴더 추가">+</button>` : `<button class="folder-tree-btn" disabled title="최대 깊이 도달">+</button>`}
+            <button class="folder-tree-btn" onclick="openMoveFolderModal('${folder.id}')" title="이동">↩</button>
+            <button class="folder-tree-btn" onclick="renameFolderPrompt('${folder.id}')" title="이름 변경">✏</button>
+            <button class="folder-tree-btn danger" onclick="removeFolder('${folder.id}')" title="삭제">🗑</button>
+          </div>
+        </div>
+      `);
+      renderNode(folder.id, depth + 1, last);
+    });
+  }
+  renderNode(null, 0, true);
+  container.innerHTML = lines.length
+    ? lines.join('')
+    : '<p style="color:var(--text3);text-align:center;padding:20px;font-size:12px;">폴더가 없습니다. 위 버튼으로 추가하세요.</p>';
+}
+
+function addTopLevelFolder() {
+  const name = prompt('최상위 폴더 이름을 입력하세요:');
+  if (!name || !name.trim()) return;
+  const f = createFolder(name.trim(), null);
+  if (f) {
+    renderFolderTree();
+    updateFolderPicker();
+    updateCatFilter();
+    showToast(`'${f.name}' 폴더가 추가되었습니다.`, 'success');
+  }
+}
+
+function addSubFolder(parentId) {
+  const parent = getFolderById(parentId);
+  if (!parent) return;
+  const name = prompt(`'${parent.name}' 하위 폴더 이름을 입력하세요:`);
+  if (!name || !name.trim()) return;
+  const f = createFolder(name.trim(), parentId);
+  if (f) {
+    renderFolderTree();
+    updateFolderPicker();
+    showToast(`'${f.name}' 폴더가 추가되었습니다.`, 'success');
+  }
+}
+
+function renameFolderPrompt(id) {
+  const folder = getFolderById(id);
+  if (!folder) return;
+  const newName = prompt('새 이름을 입력하세요:', folder.name);
+  if (!newName || !newName.trim() || newName.trim() === folder.name) return;
+  updateFolderName(id, newName.trim());
+  renderFolderTree();
+  updateFolderPicker();
+  updateCatFilter();
+  // Update category field on affected items
+  items.forEach(item => {
+    const top = getTopLevelFolder(item.folderId);
+    if (top) item.category = top.name;
+  });
+  save();
+  renderTable();
+  showToast('폴더 이름이 변경되었습니다.', 'success');
+}
+
+function openMoveFolderModal(id) {
+  const folder = getFolderById(id);
+  if (!folder) return;
+  movingFolderId = id;
+
+  const excludeIds = new Set([id, ...getAllDescendantIds(id)]);
+  const sel = document.getElementById('moveFolderTarget');
+  sel.innerHTML = '';
+
+  // "최상위(루트)로 이동" option
+  const rootOpt = document.createElement('option');
+  rootOpt.value = '';
+  rootOpt.textContent = '─ 최상위 (루트)';
+  sel.appendChild(rootOpt);
+
+  function addOptions(parentId, depth) {
+    getFolderChildren(parentId).forEach(f => {
+      if (excludeIds.has(f.id)) return;
+      // depth of f is getFolderDepth(f.id); moving 'folder' under f means folder's depth = f's depth+1
+      // folder's subtree max depth = getFolderDepth(folder.id) relative to folder itself
+      const subtreeMaxDepth = getSubtreeDepth(id); // how many levels folder's subtree has (1 = just itself)
+      if (getFolderDepth(f.id) + subtreeMaxDepth > 4) return; // would exceed 5 levels total
+      const opt = document.createElement('option');
+      opt.value = f.id;
+      opt.textContent = '　'.repeat(depth) + '📁 ' + f.name;
+      sel.appendChild(opt);
+      addOptions(f.id, depth + 1);
+    });
+  }
+  addOptions(null, 0);
+
+  // Pre-select current parent
+  sel.value = folder.parentId || '';
+  document.getElementById('moveFolderModal').classList.add('open');
+}
+
+function getSubtreeDepth(id) {
+  // Returns the max depth of the subtree rooted at id (1 = just the node, no children)
+  const children = getFolderChildren(id);
+  if (children.length === 0) return 1;
+  return 1 + Math.max(...children.map(c => getSubtreeDepth(c.id)));
+}
+
+function closeMoveFolderModal() {
+  document.getElementById('moveFolderModal').classList.remove('open');
+  movingFolderId = null;
+}
+
+function confirmMoveFolder() {
+  if (!movingFolderId) return;
+  const folder = getFolderById(movingFolderId);
+  if (!folder) return;
+
+  const sel = document.getElementById('moveFolderTarget');
+  const newParentId = sel.value || null;
+
+  if (newParentId === folder.parentId) {
+    closeMoveFolderModal();
+    return;
+  }
+
+  // Validate depth
+  if (newParentId) {
+    const parentDepth = getFolderDepth(newParentId);
+    const subtreeDepth = getSubtreeDepth(movingFolderId);
+    if (parentDepth + subtreeDepth > 4) {
+      showToast('이동 시 최대 5단계를 초과합니다.', 'error');
+      return;
+    }
+  }
+
+  folder.parentId = newParentId;
+  // Reset order so it goes to end of new parent's children
+  const sibs = getFolderChildren(newParentId);
+  folder.order = sibs.length;
+
+  // Update item categories for moved subtree
+  const movedIds = new Set([movingFolderId, ...getAllDescendantIds(movingFolderId)]);
+  items.forEach(item => {
+    if (movedIds.has(item.folderId)) {
+      const top = getTopLevelFolder(item.folderId);
+      if (top) item.category = top.name;
+    }
+  });
+
+  saveFolders();
+  save();
+  renderFolderTree();
+  updateFolderPicker();
+  updateCatFilter();
+  renderTable();
+  closeMoveFolderModal();
+  showToast(`'${folder.name}' 폴더가 이동되었습니다.`, 'success');
+}
+
+// ═══════════════════════════════════════════
+//  ITEM CRUD
+// ═══════════════════════════════════════════
+
+function load() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    items = raw ? JSON.parse(raw) : [];
+  } catch { items = []; }
+}
+function save() { localStorage.setItem(STORAGE_KEY, JSON.stringify(items)); }
+
+function saveItem() {
+  const folderId = document.getElementById('fFolderSelect').value;
+  const title    = document.getElementById('fTitle').value.trim();
+  const path     = document.getElementById('fPath').value.trim();
+  const memo     = document.getElementById('fMemo').value.trim();
+  const tags     = document.getElementById('fTags').value.trim();
+  const editId   = document.getElementById('editId').value;
+
+  if (!folderId) { showToast('폴더를 선택하세요.', 'error'); return; }
+  if (!title)    { showToast('제목을 입력하세요.', 'error'); return; }
+  if (!path)     { showToast('경로 또는 URL을 입력하세요.', 'error'); return; }
+
+  const category = deriveCategory(folderId);
+
+  if (editId) {
+    const idx = items.findIndex(i => i.id === editId);
+    if (idx !== -1) {
+      items[idx] = { ...items[idx], folderId, category, title, path, memo, tags, updatedAt: Date.now() };
+      showToast('수정되었습니다.', 'success');
+    }
+  } else {
+    items.push({ id: genId('plm_'), folderId, category, title, path, memo, tags, createdAt: Date.now(), updatedAt: Date.now() });
+    showToast('저장되었습니다.', 'success');
+  }
+
+  save();
+  clearForm();
+  renderTable();
+  updateStats();
+  updateCatFilter();
+  writeBackup(true);
+}
+
+function editItem(id) {
+  const item = items.find(i => i.id === id);
+  if (!item) return;
+  document.getElementById('fFolderSelect').value = item.folderId || '';
+  document.getElementById('fTitle').value  = item.title;
+  document.getElementById('fPath').value   = item.path;
+  document.getElementById('fMemo').value   = item.memo || '';
+  document.getElementById('fTags').value   = item.tags || '';
+  document.getElementById('editId').value  = id;
+  document.getElementById('formTitle').textContent  = '링크 수정';
+  document.getElementById('saveBtnTxt').textContent = '수정 완료';
+  const body = document.getElementById('formBody');
+  if (body.classList.contains('collapsed')) {
+    body.classList.remove('collapsed');
+    document.getElementById('formCollapseBtn').textContent = '접기 ▲';
+  }
+  document.getElementById('fTitle').focus();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function deleteItem(id) {
+  if (!confirm('이 항목을 삭제하시겠습니까?')) return;
+  items = items.filter(i => i.id !== id);
+  save();
+  renderTable();
+  updateStats();
+  updateCatFilter();
+  showToast('삭제되었습니다.', 'info');
+  writeBackup(true);
+}
+
+function clearForm() {
+  document.getElementById('fFolderSelect').value = '';
+  ['fTitle','fPath','fMemo','fTags'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('editId').value = '';
+  document.getElementById('formTitle').textContent  = '새 링크 추가';
+  document.getElementById('saveBtnTxt').textContent = '저장';
+}
+
+// ── Copy ──
+function copyPath(id, btn) {
+  const item = items.find(i => i.id === id);
+  if (!item) return;
+  let text = item.path;
+  if (text.startsWith('file:///')) text = decodeURIComponent(text.slice(8)).replace(/\//g,'\\');
+  else if (text.startsWith('file://')) text = decodeURIComponent(text.slice(7)).replace(/\//g,'\\');
+  function onCopied() {
+    btn.textContent = '✓ 복사됨'; btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = '복사'; btn.classList.remove('copied'); }, 1800);
+    showToast('클립보드에 복사되었습니다.', 'success');
+  }
+  function fallback() {
+    const ta = document.createElement('textarea');
+    ta.value = text; ta.style.cssText = 'position:fixed;opacity:0';
+    document.body.appendChild(ta); ta.focus(); ta.select();
+    try { document.execCommand('copy'); onCopied(); } catch { showToast('복사 실패', 'error'); }
+    document.body.removeChild(ta);
+  }
+  navigator.clipboard && navigator.clipboard.writeText
+    ? navigator.clipboard.writeText(text).then(onCopied).catch(fallback)
+    : fallback();
+}
+
+// ── Win+R copy ──
+function copyWinR(id, btn) {
+  const item = items.find(i => i.id === id);
+  if (!item) return;
+  let text = item.path.trim();
+  if (text.startsWith('file:///')) text = decodeURIComponent(text.slice(8)).replace(/\//g,'\\');
+  else if (text.startsWith('file://')) text = decodeURIComponent(text.slice(7)).replace(/\//g,'\\');
+  if (text.startsWith('//')) text = '\\\\' + text.slice(2).replace(/\//g,'\\');
+  text = text.replace(/\//g,'\\');
+  function onCopied() {
+    const orig = btn.textContent; btn.textContent = '✓ 복사됨';
+    setTimeout(() => { btn.textContent = orig; }, 1800);
+    showToast('Win+R 경로 복사 완료. 실행창(Win+R)에 붙여넣기 하세요.', 'success');
+  }
+  function fallback() {
+    const ta = document.createElement('textarea');
+    ta.value = text; ta.style.cssText = 'position:fixed;opacity:0';
+    document.body.appendChild(ta); ta.focus(); ta.select();
+    try { document.execCommand('copy'); onCopied(); } catch { showToast('복사 실패', 'error'); }
+    document.body.removeChild(ta);
+  }
+  navigator.clipboard && navigator.clipboard.writeText
+    ? navigator.clipboard.writeText(text).then(onCopied).catch(fallback)
+    : fallback();
+}
+
+// ── Open in new tab ──
+function openInNewTab(id) {
+  const item = items.find(i => i.id === id);
+  if (!item) return;
+  window.open(item.path, '_blank', 'noopener,noreferrer');
+}
+
+// ═══════════════════════════════════════════
+//  RENDER
+// ═══════════════════════════════════════════
+
+function getFiltered() {
+  const q  = document.getElementById('searchInput').value.trim();
+  const cf = document.getElementById('catFilter').value;
+  const tf = document.getElementById('typeFilter').value;
+  return items.filter(item => {
+    if (cf) {
+      const top = getTopLevelFolder(item.folderId);
+      if (!top || top.name !== cf) return false;
+    }
+    if (tf && pathType(item.path) !== tf) return false;
+    if (!q) return true;
+    const fp = getFolderPath(item.folderId);
+    return matchChosung(item.title, q) || matchChosung(fp, q) ||
+           matchChosung(item.path, q)  || matchChosung(item.memo, q) || matchChosung(item.tags, q);
+  });
+}
+
+function getSorted(arr) {
+  return [...arr].sort((a, b) => {
+    let va = a[sortField] || '', vb = b[sortField] || '';
+    // For category column, use folder path
+    if (sortField === 'category') { va = getFolderPath(a.folderId); vb = getFolderPath(b.folderId); }
+    if (va < vb) return -sortDir;
+    if (va > vb) return  sortDir;
+    return 0;
+  });
+}
+
+function setSort(field) {
+  if (sortField === field) sortDir *= -1;
+  else { sortField = field; sortDir = -1; }
+  document.querySelectorAll('thead th').forEach(th => {
+    th.classList.remove('sorted');
+    const icon = th.querySelector('.sort-icon');
+    if (icon) icon.textContent = '↕';
+  });
+  const headers = document.querySelectorAll('thead th');
+  const fieldIdx = ['', 'category', 'title', 'path', '', 'createdAt'].indexOf(field);
+  if (fieldIdx > 0 && headers[fieldIdx]) {
+    headers[fieldIdx].classList.add('sorted');
+    const icon = headers[fieldIdx].querySelector('.sort-icon');
+    if (icon) icon.textContent = sortDir === 1 ? '↑' : '↓';
+  }
+  renderTable();
+}
+
+function renderTable() {
+  if (currentView === 'bookmark') { renderBookmarkView(); return; }
+  const filtered = getSorted(getFiltered());
+  const tbody = document.getElementById('tableBody');
+  const empty  = document.getElementById('emptyState');
+  const count  = document.getElementById('listCount');
+  count.textContent = filtered.length;
+  if (filtered.length === 0) { tbody.innerHTML = ''; empty.style.display = 'block'; return; }
+  empty.style.display = 'none';
+  tbody.innerHTML = filtered.map((item, idx) => {
+    const fp  = getFolderPath(item.folderId);
+    const top = getTopLevelFolder(item.folderId);
+    const [fg, bg] = getCatColor(top ? top.name : '미분류');
+    const pt     = pathType(item.path);
+    const ptIcon = pt === 'file' ? '📁' : '🌐';
+    const dateStr = new Date(item.createdAt).toLocaleDateString('ko-KR', { month:'2-digit', day:'2-digit' });
+    const winrBtn = pt === 'file'
+      ? `<button class="btn btn-winr btn-sm" onclick="copyWinR('${item.id}', this)" title="Win+R / 탐색기용 경로 복사">Win+R</button>`
+      : '';
+    const openBtn = pt === 'url'
+      ? `<button class="btn btn-open btn-sm" onclick="openInNewTab('${item.id}')" title="새 탭으로 열기">↗ 열기</button>`
+      : '';
+    return `<tr id="row_${item.id}">
+      <td class="td-no">${idx + 1}</td>
+      <td class="td-cat"><span class="cat-badge" style="background:${bg};color:${fg};" title="${esc(fp)}">${esc(fp)}</span></td>
+      <td class="td-title"><span class="cell-overflow" title="${esc(item.title)}">${esc(item.title)}</span></td>
+      <td class="td-path"><span class="path-icon">${ptIcon}</span><span class="cell-overflow" title="${esc(item.path)}">${esc(item.path)}</span></td>
+      <td class="td-memo"><span class="cell-overflow">${esc(item.memo||'')}${item.tags ? ' <small style="color:var(--primary);">[' + esc(item.tags) + ']</small>' : ''}</span></td>
+      <td class="td-date">${dateStr}</td>
+      <td class="td-actions" style="text-align:center;">
+        <button class="btn btn-copy btn-sm" onclick="copyPath('${item.id}', this)">복사</button>
+        ${openBtn}${winrBtn}
+        <button class="btn btn-ghost btn-icon" onclick="editItem('${item.id}')" title="수정">✏️</button>
+        <button class="btn btn-danger-ghost btn-icon" onclick="deleteItem('${item.id}')" title="삭제">🗑</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function esc(str) {
+  if (!str) return '';
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ─── Bookmark / Folder View ───
+function setView(view) {
+  currentView = view;
+  document.getElementById('viewBtnTable').classList.toggle('active', view === 'table');
+  document.getElementById('viewBtnBookmark').classList.toggle('active', view === 'bookmark');
+  document.getElementById('tableViewWrap').style.display  = view === 'table' ? '' : 'none';
+  document.getElementById('bookmarkViewWrap').style.display = view === 'bookmark' ? '' : 'none';
+  if (view === 'bookmark') renderBookmarkView();
+}
+
+function renderBookmarkView() {
+  const filtered = getSorted(getFiltered());
+  const bv    = document.getElementById('bookmarkView');
+  const count = document.getElementById('listCount');
+  count.textContent = filtered.length;
+
+  if (filtered.length === 0) {
+    bv.innerHTML = '<div class="empty-state"><span class="empty-icon">📭</span><p>저장된 링크가 없습니다.<br>위 폼에서 새 링크를 추가해 보세요.</p></div>';
+    return;
+  }
+
+  function renderItem(item) {
+    const pt = pathType(item.path);
+    const ptIcon = pt === 'file' ? '📁' : '🌐';
+    const actionBtn = pt === 'url'
+      ? `<button class="btn btn-open btn-sm" onclick="openInNewTab('${item.id}')" title="새 탭으로 열기">↗ 열기</button>`
+      : `<button class="btn btn-winr btn-sm" onclick="copyWinR('${item.id}', this)" title="Win+R">Win+R</button>`;
+    return `<div class="bm-item">
+      <span class="bm-item-icon">${ptIcon}</span>
+      <div class="bm-item-info">
+        <div class="bm-item-title" title="${esc(item.title)}">${esc(item.title)}</div>
+        <div class="bm-item-path" title="${esc(item.path)}">${esc(item.path)}</div>
+      </div>
+      <div class="bm-item-actions">
+        ${actionBtn}
+        <button class="btn btn-copy btn-sm" onclick="copyPath('${item.id}', this)">복사</button>
+        <button class="btn btn-ghost btn-icon" onclick="editItem('${item.id}')" title="수정">✏️</button>
+        <button class="btn btn-danger-ghost btn-icon" onclick="deleteItem('${item.id}')" title="삭제">🗑</button>
+      </div>
+    </div>`;
+  }
+
+  // Recursive folder renderer. depth 0 = root (uses .bm-folder), depth 1+ uses .bm-folder-nested
+  function renderFolder(folder, depth) {
+    const allCount = countItemsInFolderTree(folder.id, filtered);
+    const children  = getFolderChildren(folder.id);
+    const direct    = filtered.filter(i => i.folderId === folder.id);
+    const cls       = depth === 0 ? 'bm-folder' : 'bm-folder-nested';
+    const subHtml   = [
+      ...children.map(c => renderFolder(c, depth + 1)),
+      ...direct.map(i => renderItem(i)),
+    ].join('');
+    return `<div class="${cls} open" data-folder-id="${folder.id}">
+      <div class="bm-folder-header">
+        <span class="bm-folder-toggle">▶</span>
+        <span class="bm-folder-icon">📁</span>
+        <span class="bm-folder-name">${esc(folder.name)}</span>
+        <span class="bm-folder-badge">${allCount}</span>
+      </div>
+      <div class="bm-folder-items">${subHtml}</div>
+    </div>`;
+  }
+
+  const topFolders = getFolderChildren(null);
+  let html = topFolders.map(f => renderFolder(f, 0)).join('');
+
+  // Uncategorized items
+  const uncat = filtered.filter(i => !i.folderId);
+  if (uncat.length > 0) {
+    html += `<div class="bm-folder open">
+      <div class="bm-folder-header">
+        <span class="bm-folder-toggle">▶</span>
+        <span class="bm-folder-icon">📂</span>
+        <span class="bm-folder-name" style="color:var(--text3);">미분류</span>
+        <span class="bm-folder-badge">${uncat.length}</span>
+      </div>
+      <div class="bm-folder-items">${uncat.map(i => renderItem(i)).join('')}</div>
+    </div>`;
+  }
+
+  // Empty folders (only when no search active)
+  if (!document.getElementById('searchInput').value.trim()) {
+    topFolders.forEach(f => {
+      if (countItemsInFolderTree(f.id, filtered) === 0) {
+        html = html; // already rendered above (will show as empty)
+      }
+    });
+  }
+
+  bv.innerHTML = html || '<div class="empty-state"><span class="empty-icon">📭</span><p>검색 결과가 없습니다.</p></div>';
+}
+
+// ── Stats ──
+function updateStats() {
+  document.getElementById('statTotal').textContent   = items.length;
+  document.getElementById('statFolders').textContent = getFolderChildren(null).length;
+  document.getElementById('statFiles').textContent   = items.filter(i => pathType(i.path) === 'file').length;
+  document.getElementById('statUrls').textContent    = items.filter(i => pathType(i.path) === 'url').length;
+}
+
+// ── Category filter (top-level folders) ──
+function updateCatFilter() {
+  const tops = getFolderChildren(null);
+  const opts = tops.map(f => `<option value="${esc(f.name)}">${esc(f.name)}</option>`).join('');
+  const sel  = document.getElementById('catFilter');
+  const cur  = sel.value;
+  sel.innerHTML = '<option value="">전체 폴더</option>' + opts;
+  sel.value = cur;
+  if (sel.value !== cur) renderTable();
+  updateFolderPicker();
+}
+
+// ── Import ──
+let activeImportTab = 'text';
+let pendingChromeItems = [];
+let pendingChromeFolders = [];
+
+function openImportModal() {
+  document.getElementById('importModal').classList.add('open');
+  setImportTab('text');
+  document.getElementById('importText').focus();
+}
+function closeImportModal() {
+  document.getElementById('importModal').classList.remove('open');
+  document.getElementById('importText').value = '';
+  pendingChromeItems = [];
+  pendingChromeFolders = [];
+  document.getElementById('chromePreview').style.display = 'none';
+  document.getElementById('chromeFileInput').value = '';
+}
+
+function setImportTab(tab) {
+  activeImportTab = tab;
+  document.getElementById('tabBtnText').classList.toggle('active',   tab === 'text');
+  document.getElementById('tabBtnChrome').classList.toggle('active', tab === 'chrome');
+  document.getElementById('importTabText').style.display   = tab === 'text'   ? '' : 'none';
+  document.getElementById('importTabChrome').style.display = tab === 'chrome' ? '' : 'none';
+}
+
+function doImportActive() {
+  if (activeImportTab === 'chrome') doImportChrome();
+  else doImport();
+}
+
+function doImport() {
+  const raw = document.getElementById('importText').value.trim();
+  if (!raw) { showToast('텍스트를 입력하세요.', 'error'); return; }
+  const lines = raw.split('\n').map(l => l.trim()).filter(l => l && !l.startsWith('#'));
+  let added = 0, skipped = 0;
+  lines.forEach(line => {
+    const sep   = line.includes('\t') ? '\t' : '|';
+    const parts = line.split(sep).map(p => p.trim());
+    if (parts.length < 3) { skipped++; return; }
+    const [folderPath, title, path, memo = '', tags = ''] = parts;
+    if (!folderPath || !title || !path) { skipped++; return; }
+    const folderId = resolveFolderPath(folderPath);
+    const category = deriveCategory(folderId);
+    items.push({ id: genId('plm_'), folderId, category, title, path, memo, tags, createdAt: Date.now() + added, updatedAt: Date.now() + added });
+    added++;
+  });
+  save();
+  renderTable();
+  updateStats();
+  updateCatFilter();
+  closeImportModal();
+  showToast(`${added}개 가져오기 완료${skipped ? ` (${skipped}개 건너뜀)` : ''}.`, added ? 'success' : 'error');
+  if (added > 0) writeBackup(true);
+}
+
+// ── Chrome Bookmark Import ──
+function onChromeFileSelect(input) {
+  const file = input.files[0];
+  if (file) readChromeFile(file);
+}
+function onChromeFileDrop(event) {
+  event.preventDefault();
+  document.getElementById('chromeDropZone').classList.remove('drag-over');
+  const file = event.dataTransfer.files[0];
+  if (file) readChromeFile(file);
+}
+function readChromeFile(file) {
+  if (!file.name.match(/\.html?$/i)) { showToast('HTML 파일(.html/.htm)만 지원합니다.', 'error'); return; }
+  const reader = new FileReader();
+  reader.onload = e => {
+    const parsed = parseChromeBookmarkHTML(e.target.result);
+    pendingChromeItems = parsed.items;
+    pendingChromeFolders = parsed.draftFolders;
+    showChromePreview(parsed);
+  };
+  reader.readAsText(file, 'utf-8');
+}
+
+function parseChromeBookmarkHTML(html) {
+  // Use raw text scanning instead of DOMParser.
+  // HTML5 parsers insert <DL> INSIDE <DT>, breaking DOM-based traversal.
+  // Sequential text scan is immune to parser reorganization.
+  // Draft folders are kept separate from global `folders` until actual import.
+  const collected    = [];
+  const draftFolders = [];
+  const previewLines = [];
+  let folderCount    = 0;
+
+  const currentPath = [null]; // null = uncategorized root
+  let pendingFolder = null;
+  let dlDepth       = 0;
+  let pos           = 0;
+
+  function findOrCreateFolder(name, parentId) {
+    let f = folders.find(x => x.parentId === parentId && x.name === name)
+         || draftFolders.find(x => x.parentId === parentId && x.name === name);
+    if (f) return f;
+    const order = folders.filter(x => x.parentId === parentId).length
+                + draftFolders.filter(x => x.parentId === parentId).length;
+    f = { id: genId('fldr_'), name, parentId: parentId || null, order };
+    draftFolders.push(f);
+    folderCount++;
+    return f;
+  }
+
+  function decodeEntities(s) {
+    return s.replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"').replace(/&#(\d+);/g,(_,n)=>String.fromCharCode(n));
+  }
+
+  // Read raw text from current pos until closeTag (case-insensitive), advance pos
+  function readUntil(closeTag) {
+    const idx = html.toLowerCase().indexOf(closeTag.toLowerCase(), pos);
+    if (idx === -1) { pos = html.length; return ''; }
+    const chunk = html.slice(pos, idx);
+    pos = idx + closeTag.length;
+    return chunk;
+  }
+
+  while (pos < html.length) {
+    const tagOpen = html.indexOf('<', pos);
+    if (tagOpen === -1) break;
+
+    // Find tag end, skip > inside quoted attribute values
+    let tagEnd = tagOpen + 1;
+    let inQuote = null;
+    while (tagEnd < html.length) {
+      const ch = html[tagEnd];
+      if (inQuote) { if (ch === inQuote) inQuote = null; }
+      else if (ch === '"' || ch === "'") { inQuote = ch; }
+      else if (ch === '>') break;
+      tagEnd++;
+    }
+    const tag = html.slice(tagOpen, tagEnd + 1);
+    pos = tagEnd + 1;
+
+    const m = tag.match(/^<\/?([a-zA-Z][a-zA-Z0-9]*)/);
+    if (!m) continue;
+    const tagName = m[1].toUpperCase();
+    const isClose = tag[1] === '/';
+
+    if (tagName === 'DL') {
+      if (isClose) {
+        if (dlDepth > 1) currentPath.pop();
+        dlDepth--;
+      } else {
+        dlDepth++;
+        if (dlDepth > 1) {
+          currentPath.push(pendingFolder);
+          pendingFolder = null;
+        }
+      }
+    } else if (tagName === 'H3' && !isClose) {
+      const raw = readUntil('</H3>').replace(/<[^>]*>/g, '').trim();
+      const name = decodeEntities(raw);
+      if (name) {
+        const parentId = currentPath[currentPath.length - 1];
+        if (currentPath.length <= 5) {
+          const f = findOrCreateFolder(name, parentId);
+          pendingFolder = f.id;
+        } else {
+          pendingFolder = currentPath[currentPath.length - 1];
+        }
+        const depth = currentPath.length - 1;
+        const indent = '  '.repeat(Math.min(depth, 4));
+        previewLines.push({ type: 'folder', text: indent + '📁 ' + name });
+      }
+    } else if (tagName === 'A' && !isClose) {
+      const hrefM = tag.match(/href="([^"]*)"/i);
+      if (hrefM) {
+        const url   = decodeEntities(hrefM[1]);
+        const raw   = readUntil('</A>').replace(/<[^>]*>/g, '').trim();
+        const title = decodeEntities(raw);
+        if (url && title && !url.startsWith('javascript:') && !url.startsWith('data:')) {
+          const folderId = currentPath[currentPath.length - 1];
+          collected.push({ folderId, title, url });
+          const depth = currentPath.length - 1;
+          const indent = '  '.repeat(Math.min(depth, 4));
+          const icon = url.startsWith('http') ? '🌐' : '📁';
+          previewLines.push({ type: 'link', text: indent + icon + ' ' + title });
+        }
+      }
+    }
+  }
+
+  return { items: collected, draftFolders, previewLines, folderCount };
+}
+function showChromePreview(parsed) {
+  const preview = document.getElementById('chromePreview');
+  const list    = document.getElementById('chromePreviewList');
+  const stats   = document.getElementById('chromePreviewStats');
+  if (parsed.items.length === 0) {
+    list.innerHTML = '<div style="color:var(--danger);padding:8px 0;">북마크를 찾지 못했습니다. Chrome 북마크 HTML 파일인지 확인하세요.</div>';
+    stats.innerHTML = '';
+    preview.style.display = '';
+    return;
+  }
+  const maxPreview = 80;
+  list.innerHTML = parsed.previewLines.slice(0, maxPreview).map(l =>
+    `<div class="chrome-preview-row ${l.type === 'folder' ? 'folder' : ''}">${esc(l.text)}</div>`
+  ).join('') + (parsed.previewLines.length > maxPreview
+    ? `<div style="color:var(--text3);padding:4px 0;">... 외 ${parsed.previewLines.length - maxPreview}개</div>`
+    : '');
+  stats.innerHTML = `<strong>${parsed.items.length}개 북마크</strong>, <strong>${parsed.folderCount}개 폴더</strong> 감지됨 — [가져오기] 버튼을 클릭하세요.`;
+  preview.style.display = '';
+}
+
+function doImportChrome() {
+  if (pendingChromeItems.length === 0) {
+    showToast('먼저 Chrome 북마크 파일을 선택하세요.', 'error'); return;
+  }
+  // Merge draft folders into global folders only at actual import time
+  pendingChromeFolders.forEach(f => { if (!folders.find(x => x.id === f.id)) folders.push(f); });
+  let added = 0;
+  pendingChromeItems.forEach(({ folderId, title, url }) => {
+    const category = deriveCategory(folderId);
+    items.push({ id: genId('plm_'), folderId, category, title, path: url, memo: '', tags: '', createdAt: Date.now() + added, updatedAt: Date.now() + added });
+    added++;
+  });
+  saveFolders();
+  save();
+  renderTable();
+  updateStats();
+  updateCatFilter();
+  closeImportModal();
+  showToast(`Chrome 북마크 ${added}개 가져오기 완료.`, 'success');
+  if (added > 0) writeBackup(true);
+}
+
+// ── Export ──
+function exportData() {
+  if (items.length === 0) { showToast('내보낼 항목이 없습니다.', 'error'); return; }
+  const lines = items.map(i => {
+    const fp = getFolderPath(i.folderId).replace(/ > /g, '/');
+    return [fp, i.title, i.path, i.memo || '', i.tags || ''].join('|');
+  });
+  const blob = new Blob([lines.join('\n')], { type: 'text/plain;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'page-link_' + new Date().toISOString().slice(0,10).replace(/-/g,'') + '.txt';
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  showToast(`${items.length}개 내보내기 완료.`, 'success');
+}
+
+// ── Clear all ──
+function clearAllConfirm() {
+  if (items.length === 0) { showToast('삭제할 항목이 없습니다.', 'error'); return; }
+  if (!confirm(`전체 ${items.length}개 항목을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.`)) return;
+  items = [];
+  save();
+  renderTable();
+  updateStats();
+  updateCatFilter();
+  showToast('전체 삭제 완료.', 'info');
+}
+
+// ── Form collapse ──
+function toggleForm() {
+  const body = document.getElementById('formBody');
+  const btn  = document.getElementById('formCollapseBtn');
+  body.classList.toggle('collapsed');
+  btn.textContent = body.classList.contains('collapsed') ? '펼치기 ▼' : '접기 ▲';
+}
+
+// ── Theme ──
+function toggleTheme() { setTheme(document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark'); }
+function setTheme(t) {
+  document.documentElement.setAttribute('data-theme', t);
+  document.getElementById('themeBtn').textContent = t === 'dark' ? '☀️' : '🌙';
+  localStorage.setItem('plm_theme', t);
+}
+
+// ── Toast ──
+function showToast(msg, type = 'info') {
+  const c = document.getElementById('toast-container');
+  const el = document.createElement('div');
+  el.className = `toast toast-${type}`;
+  const icons = { success: '✓', error: '✕', info: 'ℹ' };
+  el.innerHTML = `<span>${icons[type]||'ℹ'}</span><span>${msg}</span>`;
+  c.appendChild(el);
+  setTimeout(() => { el.style.opacity='0'; el.style.transform='translateX(100%)'; el.style.transition='all .3s'; setTimeout(() => el.remove(), 300); }, 2500);
+}
+
+// ── Keyboard shortcuts ──
+document.addEventListener('keydown', e => {
+  if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+    if (['fTitle','fPath','fMemo','fTags','fFolderSelect'].includes(document.activeElement.id)) saveItem();
+  }
+  if (e.key === 'Escape') {
+    if (document.getElementById('folderModal').classList.contains('open'))     { closeFolderModal();     return; }
+    if (document.getElementById('restoreModal').classList.contains('open'))    { closeRestoreModal();    return; }
+    if (document.getElementById('importModal').classList.contains('open'))     { closeImportModal();     return; }
+    if (document.getElementById('moveFolderModal').classList.contains('open')) { closeMoveFolderModal(); return; }
+    clearForm();
+  }
+  if ((e.ctrlKey || e.metaKey) && e.key === 'f') { e.preventDefault(); document.getElementById('searchInput').focus(); }
+});
+
+['importModal','restoreModal','folderModal','moveFolderModal'].forEach(id => {
+  const el = document.getElementById(id);
+  const closer = id === 'importModal' ? closeImportModal : id === 'restoreModal' ? closeRestoreModal : id === 'moveFolderModal' ? closeMoveFolderModal : closeFolderModal;
+  el.addEventListener('click', e => { if (e.target === e.currentTarget) closer(); });
+});
+
+// Bookmark view fold/unfold (event delegation)
+document.getElementById('bookmarkView').addEventListener('click', function(e) {
+  const header = e.target.closest('.bm-folder-header');
+  if (header && !e.target.closest('.bm-item-actions') && !e.target.closest('.bm-folder-actions')) {
+    header.parentElement.classList.toggle('open');
+  }
+});
+
+// ═══════════════════════════════════════════
+//  BACKUP (File System Access API + IndexedDB)
+// ═══════════════════════════════════════════
+let dirHandle = null;
+const IDB_NAME  = 'plm_db';
+const IDB_STORE = 'handles';
+
+function openIDB() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(IDB_NAME, 1);
+    req.onupgradeneeded = e => e.target.result.createObjectStore(IDB_STORE);
+    req.onsuccess = e => resolve(e.target.result);
+    req.onerror   = () => reject(req.error);
+  });
+}
+async function saveDirHandleToIDB(handle) {
+  try {
+    const db = await openIDB();
+    await new Promise((resolve, reject) => {
+      const tx = db.transaction(IDB_STORE, 'readwrite');
+      tx.objectStore(IDB_STORE).put(handle, 'backupDir');
+      tx.oncomplete = resolve; tx.onerror = () => reject(tx.error);
+    });
+  } catch(e) { console.warn('[PLM] IDB save failed', e); }
+}
+async function loadDirHandleFromIDB() {
+  try {
+    const db = await openIDB();
+    return await new Promise(resolve => {
+      const tx  = db.transaction(IDB_STORE, 'readonly');
+      const req = tx.objectStore(IDB_STORE).get('backupDir');
+      req.onsuccess = () => resolve(req.result || null);
+      req.onerror   = () => resolve(null);
+    });
+  } catch { return null; }
+}
+async function verifyPermission(handle) {
+  const opts = { mode: 'readwrite' };
+  if ((await handle.queryPermission(opts)) === 'granted') return true;
+  return (await handle.requestPermission(opts)) === 'granted';
+}
+function updateBackupDirUI() {
+  const chip = document.getElementById('backupDirChip');
+  if (dirHandle) { chip.textContent = '📂 ' + dirHandle.name; chip.classList.add('active'); chip.title = `백업 폴더: ${dirHandle.name}\n(클릭하여 변경)`; }
+  else           { chip.textContent = '📂 폴더 미설정'; chip.classList.remove('active'); chip.title = '백업 폴더 설정 (클릭)'; }
+}
+async function pickBackupDir() {
+  if (!window.showDirectoryPicker) { showToast('이 브라우저는 폴더 선택을 지원하지 않습니다. Chrome/Edge를 사용하세요.', 'error'); return; }
+  try {
+    dirHandle = await window.showDirectoryPicker({ mode: 'readwrite' });
+    await saveDirHandleToIDB(dirHandle);
+    updateBackupDirUI();
+    showToast('백업 폴더 설정 완료: ' + dirHandle.name, 'success');
+  } catch (err) { if (err.name !== 'AbortError') showToast('폴더 선택 실패: ' + err.message, 'error'); }
+}
+
+async function writeBackup(silent = false) {
+  if (!dirHandle) { if (!silent) showToast('백업 폴더를 먼저 설정하세요.', 'error'); return; }
+  if (items.length === 0 && silent) return;
+  const ok = await verifyPermission(dirHandle).catch(() => false);
+  if (!ok) { if (!silent) showToast('백업 폴더 접근 권한이 없습니다.', 'error'); return; }
+  const date    = new Date().toISOString().slice(0,10).replace(/-/g,'');
+  const fname   = `page-link_${date}.txt`;
+  const content = items.map(i => {
+    const fp = getFolderPath(i.folderId).replace(/ > /g, '/');
+    return [fp, i.title, i.path, i.memo||'', i.tags||''].join('|');
+  }).join('\n');
+  try {
+    const fh = await dirHandle.getFileHandle(fname, { create: true });
+    const wr = await fh.createWritable();
+    await wr.write(content); await wr.close();
+    if (!silent) {
+      showToast(`백업 완료: ${fname}`, 'success');
+    } else {
+      const chip = document.getElementById('backupDirChip');
+      const prev = chip.textContent;
+      chip.textContent = '✓ 자동백업됨';
+      setTimeout(() => { chip.textContent = prev; }, 1800);
+    }
+  } catch (err) {
+    if (!silent) showToast('백업 실패: ' + err.message, 'error');
+    else console.warn('[PLM] Auto-backup failed:', err);
+  }
+}
+
+async function manualBackup() {
+  if (!dirHandle) { await pickBackupDir(); if (!dirHandle) return; }
+  if (items.length === 0) { showToast('백업할 항목이 없습니다.', 'error'); return; }
+  await writeBackup(false);
+}
+
+// ── Restore modal ──
+async function openRestoreModal() {
+  if (!dirHandle) { showToast('백업 폴더를 먼저 설정하세요.', 'error'); return; }
+  const ok = await verifyPermission(dirHandle).catch(() => false);
+  if (!ok) { showToast('백업 폴더 접근 권한이 없습니다.', 'error'); return; }
+  document.getElementById('restoreModal').classList.add('open');
+  const wrap = document.getElementById('backupFileListWrap');
+  wrap.innerHTML = '<p style="color:var(--text3);font-size:12px;text-align:center;padding:20px 0;">파일 목록 로딩 중...</p>';
+  try {
+    const files = [];
+    for await (const [name, handle] of dirHandle.entries()) {
+      if (handle.kind === 'file' && name.startsWith('page-link_') && name.endsWith('.txt')) {
+        const file = await handle.getFile();
+        files.push({ name, size: file.size, modified: file.lastModified, handle });
+      }
+    }
+    files.sort((a, b) => b.modified - a.modified);
+    if (files.length === 0) {
+      wrap.innerHTML = '<div class="empty-state" style="padding:30px 0;"><span class="empty-icon">📭</span><p>백업 파일이 없습니다.<br>[💾 백업] 버튼으로 먼저 백업하세요.</p></div>';
+      return;
+    }
+    wrap.innerHTML = files.map((f, i) => `
+      <div class="backup-file-item" onclick="restoreFromBackup(${i})">
+        <div>
+          <div class="backup-file-name">${esc(f.name)}</div>
+          <div style="font-size:11px;color:var(--text3);margin-top:2px;">${new Date(f.modified).toLocaleString('ko-KR')}</div>
+        </div>
+        <span class="backup-file-size">${(f.size/1024).toFixed(1)} KB</span>
+      </div>`).join('');
+    window._backupFiles = files;
+  } catch (err) {
+    wrap.innerHTML = `<p style="color:var(--danger);text-align:center;padding:20px 0;">오류: ${esc(err.message)}</p>`;
+  }
+}
+function closeRestoreModal() { document.getElementById('restoreModal').classList.remove('open'); window._backupFiles = null; }
+
+async function restoreFromBackup(idx) {
+  const files = window._backupFiles;
+  if (!files || !files[idx]) return;
+  const f = files[idx];
+  if (!confirm(`'${f.name}'에서 복원하시겠습니까?\n현재 데이터(${items.length}개)가 백업 데이터로 교체됩니다.`)) return;
+  try {
+    const file  = await f.handle.getFile();
+    const text  = await file.text();
+    const lines = text.split('\n').map(l => l.trim()).filter(l => l && !l.startsWith('#'));
+    // Clear existing items (keep folders)
+    items = [];
+    lines.forEach(line => {
+      const sep   = line.includes('\t') ? '\t' : '|';
+      const parts = line.split(sep).map(p => p.trim());
+      if (parts.length < 3) return;
+      const [folderPath, title, path, memo = '', tags = ''] = parts;
+      if (!folderPath || !title || !path) return;
+      const folderId = resolveFolderPath(folderPath);
+      const category = deriveCategory(folderId);
+      items.push({ id: genId('plm_'), folderId, category, title, path, memo, tags, createdAt: Date.now(), updatedAt: Date.now() });
+    });
+    save();
+    renderTable();
+    updateStats();
+    updateCatFilter();
+    closeRestoreModal();
+    showToast(`${items.length}개 항목이 복원되었습니다. (${f.name})`, 'success');
+  } catch (err) { showToast('복원 실패: ' + err.message, 'error'); }
+}
+
+// ═══════════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════════
+(function init() {
+  setTheme(localStorage.getItem('plm_theme') || 'light');
+  loadFolders();
+  load();
+  migrateItems();
+  updateFolderPicker();
+  renderTable();
+  updateStats();
+  updateCatFilter();
+
+  loadDirHandleFromIDB().then(handle => { if (handle) { dirHandle = handle; updateBackupDirUI(); } });
+
+  // Sample data on first run
+  if (items.length === 0 && folders.length === 0) {
+    const wiki    = createFolder('Wiki',    null);
+    const share   = createFolder('공유폴더', null);
+    const guide   = createFolder('가이드',   null);
+    const wikiDev = createFolder('개발',     wiki.id);
+    const shareOp = createFolder('운영',     share.id);
+
+    [
+      [wiki.id,    '팀 위키 홈',     'http://wiki.internal/home',            '팀 전체 위키',      ''],
+      [wikiDev.id, '개발 위키',      'http://wiki.internal/dev',             '개발팀 위키',       '개발'],
+      [share.id,   '개발 산출물',    '\\\\192.168.1.10\\dev\\output',        '개발 산출물 폴더',  '개발 배포'],
+      [shareOp.id, '배포 스크립트',  '\\\\192.168.1.10\\deploy\\scripts',    '운영 배포용',       '운영 배포'],
+      [guide.id,   '코딩 가이드',    'http://wiki.internal/guide/coding',    '사내 코딩 컨벤션',  '표준'],
+    ].forEach(([folderId, title, path, memo, tags]) => {
+      items.push({ id: genId('plm_'), folderId, category: deriveCategory(folderId), title, path, memo, tags, createdAt: Date.now(), updatedAt: Date.now() });
+    });
+    save();
+    renderTable();
+    updateStats();
+    updateCatFilter();
+  }
+})();
+</script>
+</body>
+</html>

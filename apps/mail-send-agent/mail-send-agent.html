@@ -1,0 +1,615 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>mail-send-agent | 프로젝트 압축 메일 전송 툴</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="min-h-screen bg-slate-100 text-slate-900">
+  <main class="mx-auto max-w-3xl px-5 py-6">
+
+    <header class="mb-5 flex flex-col gap-3 border-b border-slate-300 pb-5 md:flex-row md:items-end md:justify-between">
+      <div>
+        <p class="text-sm font-semibold text-blue-700">mail-send-agent</p>
+        <h1 class="text-2xl font-bold tracking-normal">프로젝트 압축 메일 전송 툴</h1>
+      </div>
+      <div class="text-sm text-slate-500">JSZip · Gmail API · 브라우저 단독 실행</div>
+    </header>
+
+    <!-- Google OAuth 설정 -->
+    <section class="mb-5 rounded-lg border border-amber-300 bg-amber-50 p-5">
+      <div class="flex items-center justify-between">
+        <h2 class="font-bold text-amber-800">Google OAuth 설정</h2>
+        <button id="toggleSettingsBtn" class="text-xs text-amber-600 underline">접기</button>
+      </div>
+      <div id="settingsBody" class="mt-3 space-y-3">
+        <p class="text-xs leading-relaxed text-amber-700">
+          Gmail API 사용을 위해
+          <a href="https://console.cloud.google.com/" target="_blank" class="underline font-semibold">Google Cloud Console</a>에서
+          프로젝트를 만들고 Gmail API를 활성화한 뒤, OAuth 2.0 클라이언트 ID (웹 애플리케이션)를 발급하여 입력하세요.<br>
+          승인된 JavaScript 원본에 이 파일을 여는 origin을 추가해야 합니다.
+          (<code class="rounded bg-amber-100 px-1">http://localhost:PORT</code> 등)
+        </p>
+        <div class="flex gap-2">
+          <input id="clientIdInput" type="text"
+            placeholder="Google OAuth Client ID (xxxxxxxx.apps.googleusercontent.com)"
+            class="flex-1 rounded-md border border-amber-300 bg-white px-3 py-2 text-sm outline-none focus:border-blue-500">
+          <button id="loadEnvBtn" type="button"
+            class="shrink-0 rounded-md bg-slate-200 px-3 py-2 text-sm font-bold text-slate-700 hover:bg-slate-300"
+            title=".env.local 값 불러오기">
+            .env 불러오기
+          </button>
+          <button id="authBtn" type="button"
+            class="shrink-0 rounded-md bg-amber-600 px-4 py-2 text-sm font-bold text-white hover:bg-amber-700 disabled:cursor-not-allowed disabled:bg-slate-300">
+            Gmail 인증
+          </button>
+        </div>
+        <p id="authStatus" class="text-xs text-slate-400">인증 전</p>
+      </div>
+    </section>
+
+    <!-- 상단: 메일 정보 -->
+    <section class="mb-5 rounded-lg border border-slate-300 bg-white p-5">
+      <h2 class="mb-4 text-lg font-bold">메일 정보</h2>
+      <div class="space-y-4">
+        <label class="block">
+          <span class="mb-1 block text-sm font-bold text-slate-700">메일 제목</span>
+          <input id="subjectInput" type="text" placeholder="메일 제목을 입력하세요"
+            class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500">
+        </label>
+        <label class="block">
+          <span class="mb-1 block text-sm font-bold text-slate-700">수신자 메일 주소</span>
+          <input id="toEmailInput" type="email" placeholder="recipient@example.com"
+            class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500">
+        </label>
+      </div>
+    </section>
+
+    <!-- 중단: 프로젝트 선택 + 메일 본문 -->
+    <section class="mb-5 rounded-lg border border-slate-300 bg-white p-5">
+      <h2 class="mb-4 text-lg font-bold">대상 프로젝트 및 메일 본문</h2>
+      <div class="space-y-4">
+
+        <!-- 프로젝트 선택 -->
+        <div>
+          <div class="mb-2 flex items-center justify-between">
+            <span class="text-sm font-bold text-slate-700">
+              대상 프로젝트
+              <span class="font-normal text-slate-400">(멀티 선택 가능)</span>
+            </span>
+            <button id="addProjectBtn" type="button"
+              class="rounded-md bg-blue-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-blue-700">
+              + 프로젝트 추가
+            </button>
+          </div>
+          <input id="projectDirInput" type="file" webkitdirectory multiple class="sr-only">
+          <div id="projectChips"
+            class="min-h-12 flex flex-wrap gap-2 rounded-md border border-dashed border-slate-300 bg-slate-50 p-3">
+            <span id="projectEmptyMsg" class="text-sm text-slate-400">
+              선택된 프로젝트 없음. 위 버튼을 클릭하여 폴더를 추가하세요.
+            </span>
+          </div>
+        </div>
+
+        <!-- 압축 버튼 -->
+        <div class="flex items-center gap-3">
+          <button id="compressBtn" type="button" disabled
+            class="rounded-md bg-emerald-600 px-4 py-2 text-sm font-bold text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-slate-300">
+            전체 압축 실행
+          </button>
+          <span id="compressMsg" class="text-xs text-slate-500"></span>
+        </div>
+
+        <!-- 메일 본문 -->
+        <label class="block">
+          <span class="mb-1 block text-sm font-bold text-slate-700">메일 본문 내용</span>
+          <textarea id="bodyInput" rows="5" placeholder="메일 본문을 입력하세요"
+            class="w-full resize-y rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500"></textarea>
+        </label>
+      </div>
+    </section>
+
+    <!-- 직접 파일 첨부 -->
+    <section class="mb-5 rounded-lg border border-slate-300 bg-white p-5">
+      <div class="mb-4 flex items-center justify-between">
+        <h2 class="text-lg font-bold">직접 파일 첨부</h2>
+        <span id="extraFileCountBadge" class="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-600">0개</span>
+      </div>
+      <input id="extraFileInput" type="file" multiple class="sr-only">
+      <div id="extraFileList" class="mb-4 min-h-14 space-y-2 rounded-md border border-dashed border-slate-300 bg-slate-50 p-3">
+        <p id="extraFileEmptyMsg" class="text-sm text-slate-400">추가된 파일 없음. 아래 버튼을 클릭하여 파일을 추가하세요.</p>
+      </div>
+      <button id="addExtraFileBtn" type="button"
+        class="rounded-md bg-violet-600 px-3 py-1.5 text-sm font-bold text-white hover:bg-violet-700">
+        + 파일 추가
+      </button>
+    </section>
+
+    <!-- 하단: 압축 파일 목록 -->
+    <section class="mb-5 rounded-lg border border-slate-300 bg-white p-5">
+      <div class="mb-4 flex items-center justify-between">
+        <h2 class="text-lg font-bold">압축 파일 목록</h2>
+        <span id="zipCountBadge" class="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-600">0개</span>
+      </div>
+
+      <div id="zipList" class="mb-5 min-h-14 space-y-2 rounded-md border border-dashed border-slate-300 bg-slate-50 p-3">
+        <p id="zipEmptyMsg" class="text-sm text-slate-400">
+          압축된 파일이 없습니다. 프로젝트를 추가하고 압축을 실행하세요.
+        </p>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <button id="sendBtn" type="button" disabled
+          class="rounded-md bg-blue-700 px-5 py-2 font-bold text-white hover:bg-blue-800 disabled:cursor-not-allowed disabled:bg-slate-300">
+          메일 전송
+        </button>
+        <span id="sendMsg" class="text-sm text-slate-500"></span>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- JSZip CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <!-- Google Identity Services -->
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <!-- .env.local 기본값 (start.sh/start.bat 실행 시 자동 생성) -->
+  <script>window.__MAIL_AGENT_CONFIG__ = {};</script>
+  <script src="config.js" onerror="void 0"></script>
+
+  <script>
+(function () {
+  "use strict";
+
+  var projects   = [];   // { id, name, files: File[] }
+  var zipFiles   = [];   // { id, projectId, projectName, blob, fileName, size }
+  var extraFiles = [];   // { id, file: File, name, size, mimeType }
+  var accessToken = null;
+  var tokenClient = null;
+  var settingsOpen = true;
+
+  function $(id) { return document.getElementById(id); }
+
+  document.addEventListener("DOMContentLoaded", function () {
+    $("toggleSettingsBtn").addEventListener("click", toggleSettings);
+    $("loadEnvBtn").addEventListener("click", loadEnvDefaults);
+    $("authBtn").addEventListener("click", handleAuth);
+    $("addProjectBtn").addEventListener("click", function () { $("projectDirInput").click(); });
+    $("projectDirInput").addEventListener("change", handleProjectAdd);
+    $("compressBtn").addEventListener("click", handleCompress);
+    $("addExtraFileBtn").addEventListener("click", function () { $("extraFileInput").click(); });
+    $("extraFileInput").addEventListener("change", handleExtraFileAdd);
+    $("sendBtn").addEventListener("click", handleSend);
+
+  });
+
+  // ── 설정 패널 토글 ──────────────────────────────────────────
+  function toggleSettings() {
+    settingsOpen = !settingsOpen;
+    $("settingsBody").style.display = settingsOpen ? "" : "none";
+    $("toggleSettingsBtn").textContent = settingsOpen ? "접기" : "펼치기";
+  }
+
+  // ── .env.local 기본값 불러오기 ──────────────────────────────
+  function loadEnvDefaults() {
+    var cfg = window.__MAIL_AGENT_CONFIG__ || {};
+    if (cfg.authClientId)  $("clientIdInput").value = cfg.authClientId;
+    if (cfg.receiverEmail) $("toEmailInput").value   = cfg.receiverEmail;
+    setAuthStatus(cfg.authClientId ? ".env.local 값을 불러왔습니다." : ".env.local에 값이 없습니다.", !cfg.authClientId);
+  }
+
+  // ── Gmail OAuth ─────────────────────────────────────────────
+  function handleAuth() {
+    var clientId = $("clientIdInput").value.trim();
+    if (!clientId) { setAuthStatus("Client ID를 먼저 입력하세요.", true); return; }
+    if (typeof google === "undefined" || !google.accounts) {
+      setAuthStatus("Google Identity Services 로드 실패. 인터넷 연결을 확인하세요.", true);
+      return;
+    }
+    tokenClient = google.accounts.oauth2.initTokenClient({
+      client_id: clientId,
+      scope: "https://www.googleapis.com/auth/gmail.send",
+      callback: function (resp) {
+        if (resp.error) { setAuthStatus("인증 실패: " + resp.error, true); return; }
+        accessToken = resp.access_token;
+        setAuthStatus("인증 완료. Gmail 전송 권한이 부여되었습니다.", false);
+        updateSendBtn();
+      }
+    });
+    tokenClient.requestAccessToken();
+  }
+
+  function setAuthStatus(msg, isError) {
+    var el = $("authStatus");
+    el.textContent = msg;
+    el.className = "text-xs " + (isError ? "text-red-600 font-semibold" : "text-emerald-700 font-semibold");
+  }
+
+  // ── 프로젝트 추가 ────────────────────────────────────────────
+  function handleProjectAdd(e) {
+    var files = Array.from(e.target.files || []);
+    if (!files.length) return;
+
+    var name = getProjectRootName(files);
+    var existing = projects.findIndex(function (p) { return p.name === name; });
+    if (existing !== -1) {
+      projects[existing].files = files;
+    } else {
+      projects.push({ id: Date.now(), name: name, files: files });
+    }
+
+    e.target.value = "";
+    renderProjects();
+    $("compressBtn").disabled = false;
+  }
+
+  function getProjectRootName(files) {
+    var rel = (files[0].webkitRelativePath || files[0].name).split("/");
+    return rel[0] || files[0].name;
+  }
+
+  function removeProject(id) {
+    projects = projects.filter(function (p) { return p.id !== id; });
+    zipFiles = zipFiles.filter(function (z) { return z.projectId !== id; });
+    renderProjects();
+    renderZipList();
+    $("compressBtn").disabled = projects.length === 0;
+    updateSendBtn();
+  }
+
+  function renderProjects() {
+    var container = $("projectChips");
+    container.innerHTML = "";
+
+    if (!projects.length) {
+      var msg = document.createElement("span");
+      msg.id = "projectEmptyMsg";
+      msg.className = "text-sm text-slate-400";
+      msg.textContent = "선택된 프로젝트 없음. 위 버튼을 클릭하여 폴더를 추가하세요.";
+      container.appendChild(msg);
+      return;
+    }
+
+    projects.forEach(function (p) {
+      var chip = document.createElement("div");
+      chip.className = "inline-flex items-center gap-1.5 rounded-full bg-blue-100 px-3 py-1 text-sm font-semibold text-blue-800";
+      chip.innerHTML =
+        "<span>" + escHtml(p.name) + "</span>" +
+        '<span class="text-xs font-normal text-slate-400">(' + p.files.length + '개)</span>' +
+        '<button class="ml-1 text-blue-400 hover:text-red-600 font-bold text-base leading-none" title="제거">&times;</button>';
+      chip.querySelector("button").addEventListener("click", function () { removeProject(p.id); });
+      container.appendChild(chip);
+    });
+  }
+
+  // ── 직접 파일 첨부 ───────────────────────────────────────────
+  function handleExtraFileAdd(e) {
+    var files = Array.from(e.target.files || []);
+    if (!files.length) return;
+    files.forEach(function (file) {
+      var isDup = extraFiles.some(function (ef) { return ef.name === file.name && ef.size === file.size; });
+      if (!isDup) {
+        extraFiles.push({
+          id: Date.now() + Math.random(),
+          file: file,
+          name: file.name,
+          size: file.size,
+          mimeType: file.type || "application/octet-stream"
+        });
+      }
+    });
+    e.target.value = "";
+    renderExtraFiles();
+    updateSendBtn();
+  }
+
+  function removeExtraFile(id) {
+    extraFiles = extraFiles.filter(function (ef) { return ef.id !== id; });
+    renderExtraFiles();
+    updateSendBtn();
+  }
+
+  function renderExtraFiles() {
+    var list = $("extraFileList");
+    $("extraFileCountBadge").textContent = extraFiles.length + "개";
+
+    if (!extraFiles.length) {
+      list.innerHTML = '<p class="text-sm text-slate-400">추가된 파일 없음. 아래 버튼을 클릭하여 파일을 추가하세요.</p>';
+      return;
+    }
+
+    list.innerHTML = "";
+    extraFiles.forEach(function (ef) {
+      var row = document.createElement("div");
+      row.className = "flex items-center justify-between rounded-md border border-slate-200 bg-white px-4 py-2.5";
+      row.innerHTML =
+        '<div class="flex min-w-0 items-center gap-3">' +
+          '<span class="text-xl">&#128206;</span>' +
+          '<div class="min-w-0">' +
+            '<div class="truncate text-sm font-semibold text-slate-800">' + escHtml(ef.name) + '</div>' +
+            '<div class="text-xs text-slate-400">' + escHtml(ef.mimeType) + ' &middot; ' + fmtBytes(ef.size) + '</div>' +
+          '</div>' +
+        '</div>' +
+        '<button class="del-btn ml-3 shrink-0 rounded bg-red-50 px-2 py-1 text-xs text-red-500 hover:bg-red-100">삭제</button>';
+      var efCopy = ef;
+      row.querySelector(".del-btn").addEventListener("click", function () { removeExtraFile(efCopy.id); });
+      list.appendChild(row);
+    });
+  }
+
+  // ── 압축 ─────────────────────────────────────────────────────
+  async function handleCompress() {
+    if (!projects.length) return;
+    $("compressBtn").disabled = true;
+    setCompressMsg("압축 중...");
+
+    try {
+      for (var i = 0; i < projects.length; i++) {
+        var p = projects[i];
+        setCompressMsg("압축 중: " + p.name + " (" + (i + 1) + "/" + projects.length + ")");
+        var result = await compressProject(p);
+        zipFiles = zipFiles.filter(function (z) { return z.projectId !== p.id; });
+        zipFiles.push(result);
+      }
+      setCompressMsg(projects.length + "개 프로젝트 압축 완료.");
+      renderZipList();
+      updateSendBtn();
+    } catch (err) {
+      setCompressMsg("압축 실패: " + (err.message || err), true);
+    } finally {
+      $("compressBtn").disabled = false;
+    }
+  }
+
+  async function compressProject(project) {
+    var zip = new JSZip();
+    var folder = zip.folder(project.name);
+    var reRoot = new RegExp("^" + escRegex(project.name) + "[/\\\\]");
+
+    for (var i = 0; i < project.files.length; i++) {
+      var file = project.files[i];
+      var rel = (file.webkitRelativePath || file.name).replace(reRoot, "");
+
+      // .js → .txt (Gmail은 .js 첨부 차단)
+      if (/\.js$/i.test(rel)) rel = rel.replace(/\.js$/i, ".txt");
+
+      var buf = await readArrayBuffer(file);
+      folder.file(rel, buf);
+    }
+
+    var blob = await zip.generateAsync({ type: "blob", compression: "DEFLATE", compressionOptions: { level: 6 } });
+    var datestamp = formatDateCompact(new Date());
+    return {
+      id: Date.now() + Math.random(),
+      projectId: project.id,
+      projectName: project.name,
+      blob: blob,
+      fileName: project.name + "_" + datestamp + ".zip",
+      size: blob.size
+    };
+  }
+
+  function readArrayBuffer(file) {
+    return new Promise(function (resolve, reject) {
+      var r = new FileReader();
+      r.onload = function (e) { resolve(e.target.result); };
+      r.onerror = function () { reject(new Error("파일 읽기 실패: " + file.name)); };
+      r.readAsArrayBuffer(file);
+    });
+  }
+
+  function setCompressMsg(msg, isError) {
+    var el = $("compressMsg");
+    el.textContent = msg;
+    el.className = "text-xs " + (isError ? "text-red-600" : "text-slate-500");
+  }
+
+  // ── 압축 파일 목록 렌더링 ─────────────────────────────────────
+  function renderZipList() {
+    var list = $("zipList");
+    $("zipCountBadge").textContent = zipFiles.length + "개";
+
+    if (!zipFiles.length) {
+      list.innerHTML = '<p class="text-sm text-slate-400">압축된 파일이 없습니다. 프로젝트를 추가하고 압축을 실행하세요.</p>';
+      return;
+    }
+
+    list.innerHTML = "";
+    zipFiles.forEach(function (z) {
+      var row = document.createElement("div");
+      row.className = "flex items-center justify-between rounded-md border border-slate-200 bg-white px-4 py-2.5";
+      row.innerHTML =
+        '<div class="flex min-w-0 items-center gap-3">' +
+          '<span class="text-xl">&#128230;</span>' +
+          '<div class="min-w-0">' +
+            '<div class="truncate text-sm font-semibold text-slate-800">' + escHtml(z.fileName) + '</div>' +
+            '<div class="text-xs text-slate-400">' + escHtml(z.projectName) + ' &middot; ' + fmtBytes(z.size) + '</div>' +
+          '</div>' +
+        '</div>' +
+        '<div class="ml-3 flex shrink-0 items-center gap-2">' +
+          '<button class="dl-btn rounded bg-slate-100 px-2 py-1 text-xs text-slate-600 hover:bg-slate-200">다운로드</button>' +
+          '<button class="del-btn rounded bg-red-50 px-2 py-1 text-xs text-red-500 hover:bg-red-100">삭제</button>' +
+        '</div>';
+
+      var zCopy = z;
+      row.querySelector(".dl-btn").addEventListener("click", function () { downloadZip(zCopy); });
+      row.querySelector(".del-btn").addEventListener("click", function () { removeZip(zCopy.id); });
+      list.appendChild(row);
+    });
+  }
+
+  function downloadZip(z) {
+    var url = URL.createObjectURL(z.blob);
+    var a = document.createElement("a");
+    a.href = url; a.download = z.fileName;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+  }
+
+  function removeZip(id) {
+    zipFiles = zipFiles.filter(function (z) { return z.id !== id; });
+    renderZipList();
+    updateSendBtn();
+  }
+
+  // ── 메일 전송 ─────────────────────────────────────────────────
+  function updateSendBtn() {
+    $("sendBtn").disabled = (zipFiles.length === 0 && extraFiles.length === 0) || !accessToken;
+  }
+
+  async function handleSend() {
+    var subject = $("subjectInput").value.trim();
+    var toEmail = $("toEmailInput").value.trim();
+    var body    = $("bodyInput").value;
+
+    if (!toEmail)  { setSendMsg("수신자 메일 주소를 입력하세요.", true); return; }
+    if (!subject)  { setSendMsg("메일 제목을 입력하세요.", true); return; }
+    if (!accessToken) { setSendMsg("Gmail 인증이 필요합니다.", true); return; }
+    if (!zipFiles.length && !extraFiles.length) { setSendMsg("전송할 첨부 파일이 없습니다.", true); return; }
+
+    $("sendBtn").disabled = true;
+    setSendMsg("메일 전송 중...");
+
+    try {
+      var attachments = [];
+      for (var i = 0; i < zipFiles.length; i++) {
+        attachments.push({
+          fileName: zipFiles[i].fileName,
+          mimeType: "application/zip",
+          base64: await blobToBase64(zipFiles[i].blob)
+        });
+      }
+      for (var j = 0; j < extraFiles.length; j++) {
+        attachments.push({
+          fileName: extraFiles[j].name,
+          mimeType: extraFiles[j].mimeType,
+          base64: await blobToBase64(extraFiles[j].file)
+        });
+      }
+
+      var mime = buildMime(toEmail, subject, body, attachments);
+      var raw  = base64Url(mime);
+
+      var res = await fetch("https://gmail.googleapis.com/gmail/v1/users/me/messages/send", {
+        method: "POST",
+        headers: { "Authorization": "Bearer " + accessToken, "Content-Type": "application/json" },
+        body: JSON.stringify({ raw: raw })
+      });
+
+      if (!res.ok) {
+        var errJson = await res.json().catch(function () { return {}; });
+        throw new Error((errJson.error && errJson.error.message) || "전송 실패 (HTTP " + res.status + ")");
+      }
+
+      setSendMsg("전송 완료! " + attachments.length + "개 파일이 첨부되어 " + toEmail + " 로 전송되었습니다.");
+    } catch (err) {
+      setSendMsg("전송 실패: " + (err.message || err), true);
+      $("sendBtn").disabled = zipFiles.length === 0;
+    }
+  }
+
+  function buildMime(to, subject, body, attachments) {
+    var boundary = "----MailSendAgent" + Date.now();
+    var lines = [];
+
+    lines.push("To: " + to);
+    lines.push("Subject: =?UTF-8?B?" + btoa(toBinaryStr(subject)) + "?=");
+    lines.push("MIME-Version: 1.0");
+    lines.push('Content-Type: multipart/mixed; boundary="' + boundary + '"');
+    lines.push("");
+    lines.push("--" + boundary);
+    lines.push("Content-Type: text/plain; charset=utf-8");
+    lines.push("Content-Transfer-Encoding: base64");
+    lines.push("");
+    // RFC 2045: split base64 into 76-char lines
+    lines.push(wrapBase64(btoa(toBinaryStr(body || ""))));
+
+    attachments.forEach(function (att) {
+      lines.push("--" + boundary);
+      lines.push("Content-Type: " + (att.mimeType || "application/octet-stream"));
+      lines.push("Content-Transfer-Encoding: base64");
+      lines.push("Content-Disposition: attachment; " + encodeRfc5987Filename(att.fileName));
+      lines.push("");
+      lines.push(wrapBase64(att.base64));
+    });
+
+    lines.push("--" + boundary + "--");
+    return lines.join("\r\n");
+  }
+
+  function encodeRfc5987Filename(name) {
+    // non-ASCII 포함 시 RFC 5987 방식으로 인코딩, ASCII만 있으면 quoted-string 사용
+    if (/[^\x20-\x7e]/.test(name)) {
+      return "filename*=UTF-8''" + encodeURIComponent(name);
+    }
+    return 'filename="' + name + '"';
+  }
+
+  function toBinaryStr(str) {
+    // UTF-8 → binary string for btoa
+    return unescape(encodeURIComponent(str));
+  }
+
+  function wrapBase64(b64) {
+    var out = "";
+    for (var i = 0; i < b64.length; i += 76) out += b64.slice(i, i + 76) + "\r\n";
+    return out.trimRight();
+  }
+
+  function base64Url(str) {
+    // str must be ASCII-safe (MIME body has all non-ASCII already base64-encoded)
+    return btoa(str).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  }
+
+  function blobToBase64(blob) {
+    return new Promise(function (resolve, reject) {
+      var r = new FileReader();
+      r.onload = function (e) { resolve(e.target.result.split(",")[1]); };
+      r.onerror = function () { reject(new Error("Blob 읽기 실패")); };
+      r.readAsDataURL(blob);
+    });
+  }
+
+  function setSendMsg(msg, isError) {
+    var el = $("sendMsg");
+    el.textContent = msg;
+    el.className = "text-sm " + (isError ? "text-red-600 font-semibold" : "text-emerald-700 font-semibold");
+  }
+
+  // ── 유틸 ────────────────────────────────────────────────────
+  function escHtml(s) {
+    return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+  }
+
+  function escRegex(s) {
+    return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  }
+
+  function fmtBytes(b) {
+    if (!b) return "0 B";
+    var u = ["B","KB","MB","GB"], v = b, i = 0;
+    while (v >= 1024 && i < u.length - 1) { v /= 1024; i++; }
+    return (i === 0 ? v : v.toFixed(1)) + " " + u[i];
+  }
+
+  function formatDateCompact(d) {
+    return d.getFullYear() +
+      String(d.getMonth() + 1).padStart(2, "0") +
+      String(d.getDate()).padStart(2, "0");
+  }
+})();
+  </script>
+
+  <script>
+    // .env.local 기본값 적용 (config.js 로드 후 DOM이 이미 존재하는 시점에 직접 적용)
+    (function () {
+      var cfg = window.__MAIL_AGENT_CONFIG__ || {};
+      var ci = document.getElementById("clientIdInput");
+      var te = document.getElementById("toEmailInput");
+      if (ci && cfg.authClientId)  ci.value = cfg.authClientId;
+      if (te && cfg.receiverEmail) te.value = cfg.receiverEmail;
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,39 @@
+---
+description: Rules for the standalone file-transfer log mapping tool
+globs: apps/file-transfer/**
+alwaysApply: false
+---
+
+# file-transfer 규칙
+
+이 룰은 `apps/file-transfer` 작업 시 지켜야 할 제약조건입니다.
+기능 맥락과 작업 프롬프트는 `apps/file-transfer/prompts/feature-context.md`를 참고합니다.
+
+## 실행 환경
+
+- `file-transfer.html`은 Tailwind CDN과 인라인 Vanilla JS로 동작합니다.
+- 별도의 npm 패키지, 빌드 단계, 백엔드 API를 추가하지 않습니다.
+- `file-transfer.js`는 이전 분리형 구현 파일입니다. 현재 README 기준 실행 파일은 `file-transfer.html`입니다. 둘 중 어느 파일을 바꿔야 하는지 먼저 확인합니다.
+- 테스트 로그 생성은 `gen-test-log.js`를 Node.js로 실행합니다.
+
+## 대용량 처리 제약
+
+- 입력 파일 전체를 `readAsText()`나 하나의 거대한 문자열로 읽지 않습니다.
+- 기본 처리는 `File.slice()`, `arrayBuffer()`, `TextDecoder.decode(..., { stream: true })` 기반 청크 처리입니다.
+- 청크 사이에서 끊긴 마지막 줄은 tail 변수로 넘기는 패턴을 유지합니다.
+- 정상 출력은 모든 라인을 배열에 오래 보관하지 않고, 일정 크기의 텍스트 버퍼를 Blob으로 flush하는 방식을 유지합니다.
+- 미리보기는 제한된 크기만 보관합니다. 사용자가 1GB 이상 파일을 넣어도 UI가 버티는 것을 우선합니다.
+- 다운로드 URL은 사용 후 revoke하고, 완료 후 불필요한 Blob/ArrayBuffer 참조를 해제합니다.
+
+## 매핑과 검증
+
+- NFS 접두사에서 Object Storage 접두사로 치환한 뒤 선택 Regex 치환, 포함/제외 Regex, Object Storage 경로 검증을 적용합니다.
+- 실패 행은 Mapping Report CSV에는 실패 사유와 함께 남기고, Error List TXT에는 원본 경로만 기록하는 현재 분리를 유지합니다.
+- CSV는 Excel에서 바로 열 수 있도록 BOM과 기존 컬럼 순서를 유지합니다.
+- 경로 금지 문자, 전체 길이, 공백/제어 문자 검증을 바꿀 때는 README 예시와 UI 설명도 함께 맞춥니다.
+
+## UI
+
+- 도구형 화면입니다. 장식보다 파일 상태, 처리 진행률, 정상/불가 건수, 출력 파일 수가 빠르게 읽히는 구성을 우선합니다.
+- 긴 파일명과 긴 경로는 레이아웃을 깨지 않도록 truncate, overflow, pre 영역 스크롤을 유지합니다.
+- 중단 버튼, 처리 중 disabled 상태, 재처리 시 상태 초기화가 서로 어긋나지 않게 확인합니다.

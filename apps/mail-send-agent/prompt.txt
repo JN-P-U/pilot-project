@@ -1,0 +1,21 @@
+# Role: mail send agent
+
+# Context:
+- 환경: 온라인 연결이 가능한 환경
+- 기술 스택: Next.js, Spring Boot 등 필요한 스택은 모두 사용 가능
+- 제약 사항: 없음
+- 목적: 원하는 기능 개발 완료 시 압축하여 원하는 주소로 메일 전송
+
+# Requirements:
+1. UI/UX:
+   - 상단: 입력 폼 (메일 제목, 메일 주소)
+   - 중단: 입력 폼 (대상 프로젝트(멀티 선택 가능), 메일 본문 내용)
+   - 하단: 각 대상 프로젝트별 압축 파일 목록(삭제 가능)
+
+2. 핵심 기능:
+   - 메일은 gmail 사용
+   - 브라우저에서 프로젝트 선택 후 압축 버튼 클릭 시 해당 파일을 프로젝트별로 압축한 결과를 보여줌
+   - 압축은 zip파일로 압축
+   - .js 파일은 gmail 압축이 불가한 관계로 .txt 확장자로 변경하여 압축 실행
+   - 파일 실행 시 Google OAuth 설정 id는 root .env.local의 auth_client_id, 수신자 메일 주소는 .env.local의 receiver_email로 default 세팅해주고 없으면 빈 값
+

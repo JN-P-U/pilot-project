@@ -1,0 +1,36 @@
+---
+description: Rules for the standalone browser UI test evidence distribution
+globs: packages/browser/**
+alwaysApply: false
+---
+
+# 브라우저 증빙 배포본 규칙
+
+이 룰은 `packages/browser` 작업 시 지켜야 할 제약조건입니다.
+기능 맥락과 작업 프롬프트는 `packages/browser/prompts/feature-context.md`를 참고합니다.
+
+## 실행 환경
+
+- `ui-test-evidence-excel.js`는 외부 라이브러리 없이 브라우저에서 XLSX 생성, 다운로드, 탭 캡처를 제공합니다.
+- `ui-test-evidence.html`은 바로 실행 가능한 샘플 화면입니다.
+- 서버, 번들러, npm 패키지, 백엔드 API를 추가하지 않습니다.
+- 브라우저 API인 `Blob`, `URL.createObjectURL`, `TextEncoder`, `atob`, `navigator.mediaDevices.getDisplayMedia` 사용 전제를 유지합니다.
+
+## 공개 API
+
+- 전역 객체 `UITestEvidenceExcel`의 API 이름과 payload 필드는 README와 맞춰야 합니다.
+- 주요 API는 `captureTab`, `downloadExcel`, `generateExcel`, `makeFileName`입니다.
+- 케이스 이미지 필드는 README 기준 `imageBase64`입니다. React 패키지의 `image` 필드와 혼동하지 않습니다.
+- 기본 파일명 형식은 `MAL_{서비스코드}_AC02(단위테스트케이스결과서)_UT_{화면ID}_{화면명}_V1.0.xlsx`입니다.
+
+## XLSX 규칙
+
+- 무거운 엑셀 라이브러리(`exceljs`, `xlsx` 등)를 추가하지 않습니다.
+- 생성되는 시트 이름은 README와 동일하게 유지합니다.
+- 서버 업로드 없이 클라이언트 브라우저에서 직접 XLSX를 생성하고 다운로드합니다.
+- 이미지가 크거나 케이스가 많을 때 브라우저 메모리를 과도하게 사용하지 않도록 복사를 최소화합니다.
+
+## 문서와 검증
+
+- API, payload, 파일명, 시트, 캡처 동작이 바뀌면 `packages/browser/README.md`를 함께 업데이트합니다.
+- 가능한 경우 샘플 HTML을 브라우저에서 열어 캡처와 다운로드 흐름을 확인합니다.

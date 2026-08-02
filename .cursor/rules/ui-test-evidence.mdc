@@ -1,0 +1,38 @@
+---
+description: Rules for the Next.js UI test evidence app and React package
+globs: apps/ui-test/**
+alwaysApply: false
+---
+
+# UI 테스트 증빙 규칙
+
+이 룰은 `apps/ui-test`와 내부 React 패키지 작업 시 지켜야 할 제약조건입니다.
+기능 맥락과 작업 프롬프트는 `apps/ui-test/prompts/feature-context.md`를 참고합니다.
+
+## Next.js 샘플 앱
+
+- `apps/ui-test/app`은 App Router 기반입니다. 브라우저 상태, DOM 캡처, 다운로드 로직이 필요한 컴포넌트는 `"use client"`를 유지합니다.
+- 앱 경로 import는 기존처럼 `@/app/...`를 사용합니다.
+- 운영 도구형 화면이므로 테이블, 검색 영역, 모달, 페이지네이션은 조밀하고 예측 가능한 UI를 우선합니다.
+- 화면 문구는 한국어를 기본으로 하고, 접근 가능한 `button`, `label`, `alt`, `title`을 유지합니다.
+- 브라우저 전용 API를 SSR 경로에서 실행하지 않습니다.
+
+## `@ui-test/react` 패키지
+
+- 공개 export는 `src/index.ts`에서 관리합니다.
+- DOM 캡처는 현재 `html-to-image` 동적 import를 사용합니다. SSR 번들 또는 서버 실행 경로에서 import하지 않습니다.
+- 케이스 데이터는 `CaseItem` 타입을 기준으로 유지합니다. 이미지 필드는 React 패키지에서는 `image` data URL입니다.
+
+## XLSX 생성
+
+- `generate-excel.ts`는 외부 엑셀 라이브러리 없이 ZIP, XML, 이미지 삽입을 직접 구성합니다. 작은 수정에도 Office Open XML 구조가 깨질 수 있으니 시트 관계, drawing 관계, media 파일명을 함께 확인합니다.
+- 시트 이름은 `겉표지`, `개정이력`, `단위테스트케이스`, `공통체크리스트`, `단위테스트케이스결과증빙`을 유지합니다.
+- 기본 파일명 형식은 `MAL_{서비스코드}_AC02(단위테스트케이스결과서)_UT_{화면ID}_{화면명}_V1.0.xlsx`입니다.
+- 날짜 문자열은 기존 `YYYY-MM-DD` 형식을 유지합니다.
+- 이미지 data URL은 PNG/JPEG를 기준으로 처리합니다. 큰 캡처 이미지가 들어와도 브라우저 메모리를 과도하게 쓰지 않도록 복사를 최소화합니다.
+
+## 검증
+
+- UI 변경: `npm run build --workspace=ui-test`
+- 플로우 변경: `npm run test:e2e --workspace=ui-test`
+- XLSX 구조 변경: 최소 1건 이상의 케이스로 다운로드 파일명을 확인하고, 가능하면 생성 파일을 실제 스프레드시트 앱에서 열어 확인합니다.
