@@ -1,0 +1,4 @@
+# mock 프로필: KIS 자격증명 없이 로컬에서 UI/API 통합을 검증할 때 사용합니다.
+# QuoteService/OrderService 는 KisQuoteService/KisOrderService 대신 MockQuoteService/MockOrderService 를 주입받습니다.
+trading:
+  order-enabled: false
