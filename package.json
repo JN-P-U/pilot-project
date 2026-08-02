@@ -1,3 +1,20 @@
 {
-  "private": true
+  "name": "ui-test-monorepo",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*",
+    "packages/browser/*",
+    "apps/ui-test/test-evidence",
+    "apps/auto-ui-test/test-evidence",
+    "apps/trading-bot/frontend"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace=ui-test",
+    "build": "npm run build --workspace=ui-test",
+    "test": "npm run test --workspace=@ui-test/react",
+    "test:coverage": "npm run test:coverage --workspace=@ui-test/react",
+    "test:e2e": "npm run test:e2e --workspace=ui-test",
+    "test:all": "npm run test --workspace=@ui-test/react && npm run test:e2e --workspace=ui-test"
+  }
 }

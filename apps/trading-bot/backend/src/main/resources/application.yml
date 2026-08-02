@@ -1,0 +1,114 @@
+spring:
+  application:
+    name: trading-bot
+  # 프로필은 반드시 외부(env / .env / 실행 인자) 에서 명시적으로 선택합니다.
+  # 값 예: mock (자격증명 없이 UI 검증) / live (KIS 실호출).
+  # 지정하지 않으면 애플리케이션은 부팅 시점에 실패합니다 — 어느 모드로 뜨는지 명확하게 하기 위함.
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE}
+
+server:
+  port: 8080
+
+kis:
+  # true 이면 실전, false 이면 모의투자 서버를 사용합니다.
+  live: ${KIS_LIVE:false}
+  base-url:
+    live: https://openapi.koreainvestment.com:9443
+    paper: https://openapivts.koreainvestment.com:29443
+  # 앱키/시크릿은 환경변수로만 주입하세요. 절대 커밋 금지.
+  app-key: ${KIS_APP_KEY:}
+  app-secret: ${KIS_APP_SECRET:}
+  account:
+    # 계좌번호 앞 8자리 (CANO)
+    cano: ${KIS_CANO:}
+    # 계좌번호 뒤 2자리 (ACNT_PRDT_CD, 보통 01)
+    product-code: ${KIS_ACNT_PRDT_CD:01}
+
+# 자동 매매 봇
+bot:
+  # true 이면 스케줄러가 시그널 발생 시 실제 주문을 시도합니다. false 이면 시그널만 계산·로깅.
+  enabled: ${BOT_ENABLED:false}
+  # Asia/Seoul 기준 크론. 기본: 평일 정규장(9-15시) 매 1분.
+  # (guard 의 open-time/close-time 이 최종 시간 창을 재차 걸러줍니다)
+  cron: ${BOT_CRON:0 * 9-15 * * MON-FRI}
+  # 후보 종목 화이트리스트 (콤마 구분). VOLUME_RANK 모드에선 참조되지 않고 STATIC 모드일 때만 사용.
+  candidates: ${BOT_CANDIDATES:035720}
+  # FIXED 사이징일 때의 단건 주문 수량. ALL_IN 모드에선 무시됩니다.
+  quantity-per-order: ${BOT_QTY:1}
+  sma:
+    short-window: ${BOT_SMA_SHORT:5}
+    long-window: ${BOT_SMA_LONG:20}
+  rsi:
+    # 표준 14. 1분봉이면 14분 lookback.
+    period: ${BOT_RSI_PERIOD:14}
+    # 이 값 이상이면 BUY 신호를 억제 (골든크로스여도 매수하지 않음).
+    buy-max: ${BOT_RSI_BUY_MAX:70}
+    # 이 값 이상이면 SMA 크로스와 무관하게 강제 SELL (과열 청산).
+    sell-min: ${BOT_RSI_SELL_MIN:80}
+  # 리스크 오버레이. 전략 시그널과 무관하게 손실/이익 임계 도달 시 강제 매도.
+  # 0 이면 해당 트리거 비활성.
+  risk:
+    stop-loss-pct: ${BOT_STOP_LOSS_PCT:3.0}
+    take-profit-pct: ${BOT_TAKE_PROFIT_PCT:5.0}
+  # 후보 발굴 정책.
+  # source:
+  #   STATIC             — bot.candidates 그대로 사용 (frontend 편집)
+  #   VOLUME_RANK        — KIS 거래대금 순위 그대로 사용 (매 tick 갱신)
+  #   TECHNICAL_ANALYSIS — WeeklyCandidateAnalyzer 스코어링 상위 N 개를 캐시하며 사용 (권장 기본)
+  discovery:
+    source: ${BOT_DISCOVERY_SOURCE:TECHNICAL_ANALYSIS}
+    limit: ${BOT_DISCOVERY_LIMIT:5}
+    min-price: ${BOT_DISCOVERY_MIN_PRICE:2000}
+    max-price: ${BOT_DISCOVERY_MAX_PRICE:100000}
+    # TECHNICAL_ANALYSIS 모드에서 스코어링 결과 캐시 유지 시간(초).
+    # 매 1분 tick 마다 KIS 를 다시 두드리지 않기 위한 값 (기본 10분).
+    technical-cache-seconds: ${BOT_TECHNICAL_CACHE_SECONDS:600}
+  # 포지션 사이징.
+  # mode = ALL_IN: KIS 예수금(dnca_tot_amt) × all-in-ratio 를 현재가로 나눠 매수 수량 산정.
+  # mode = FIXED: quantity-per-order 를 그대로 사용.
+  # TradingGuard 의 max-quantity-per-order 가 최종 상한으로 재차 적용됩니다.
+  sizing:
+    mode: ${BOT_SIZING_MODE:ALL_IN}
+    all-in-ratio: ${BOT_ALL_IN_RATIO:1.0}
+  # 의사결정 로그 파일 저장 위치. 각 결정은 YYYY-MM-DD.md 에 마크다운 표 한 행으로 append.
+  # 기본값은 백엔드 워킹디렉토리에서 상대적으로 apps/trading-bot/log/ 를 가리키게 세팅.
+  log:
+    dir: ${BOT_LOG_DIR:${user.dir}/../log}
+  # 프론트에서 실행 모드(mock/live) 를 저장할 대상 .env 파일 위치.
+  # SPRING_PROFILES_ACTIVE 값만 이 파일에서 갱신되며, 나머지 라인은 보존됩니다.
+  # 갱신 후 재시작하면 start-dev.sh 가 .env 를 로드하며 새 프로필이 적용됩니다.
+  env-file: ${BOT_ENV_FILE:${user.dir}/../.env}
+
+trading:
+  # true 이면 실제 주문 API 호출을 허용. false 이면 dry-run(로그만).
+  order-enabled: ${TRADING_ORDER_ENABLED:false}
+  # 소액 실전용 사전 안전장치. 환경변수로 개별 override 가능.
+  guard:
+    # 정규장 시간에만 주문 허용 (평일 09:00 ~ 15:20 KST)
+    market-hours-only: ${TRADING_MARKET_HOURS_ONLY:true}
+    open-time: ${TRADING_OPEN_TIME:09:00}
+    close-time: ${TRADING_CLOSE_TIME:15:20}
+    # 허용 종목 화이트리스트. 콤마 구분. 비우면 전체 허용(비추천).
+    allowed-stock-codes: ${TRADING_ALLOWED_STOCK_CODES:005930}
+    # 단건 주문 최대 수량
+    max-quantity-per-order: ${TRADING_MAX_QTY:1}
+    # 하루 총 주문금액(원) 상한. 수량 × (지정가 또는 현재가) 누적.
+    max-daily-notional: ${TRADING_MAX_DAILY_NOTIONAL:50000}
+
+logging:
+  level:
+    com.tradingbot: DEBUG
+
+# OpenAPI / Swagger UI
+# - 문서 JSON:  http://localhost:8080/v3/api-docs
+# - Swagger UI: http://localhost:8080/swagger-ui.html
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    operations-sorter: method
+    tags-sorter: alpha
+  # /api/** 만 문서에 노출 (액추에이터/에러 페이지 등 잡음 제거)
+  paths-to-match: /api/**

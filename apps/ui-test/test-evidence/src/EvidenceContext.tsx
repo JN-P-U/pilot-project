@@ -5,6 +5,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useMemo,
   useState,
   type ReactNode,
 } from "react";
@@ -46,15 +47,18 @@ export function EvidenceScreenProvider({ children }: { children: ReactNode }) {
     setOverride(null);
   }, []);
 
+  const value = useMemo(
+    () => ({
+      currentScreenId: override?.id ?? pathToScreenId(pathname),
+      currentScreenName: override?.name ?? "",
+      setScreen,
+      resetScreen,
+    }),
+    [override, pathname, setScreen, resetScreen]
+  );
+
   return (
-    <EvidenceScreenContext.Provider
-      value={{
-        currentScreenId: override?.id ?? pathToScreenId(pathname),
-        currentScreenName: override?.name ?? "",
-        setScreen,
-        resetScreen,
-      }}
-    >
+    <EvidenceScreenContext.Provider value={value}>
       {children}
     </EvidenceScreenContext.Provider>
   );
